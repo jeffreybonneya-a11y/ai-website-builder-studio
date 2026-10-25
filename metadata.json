@@ -1,0 +1,6 @@
+{
+  "name": "AI Website Builder Studio",
+  "description": "Turn your ideas into real websites and web apps. Generate code, edit your project, preview it live, and push your work to GitHub — all in one workspace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

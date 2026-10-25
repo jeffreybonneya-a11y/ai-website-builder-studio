@@ -1,0 +1,645 @@
+# AI WEBSITE BUILDER STUDIO — MASTER IMPLEMENTATION BRIEF
+
+## PROJECT IDENTITY AND OBJECTIVE
+
+Build a production-oriented AI website and web application builder called **AI Website Builder Studio**.
+
+This product is intended for a global audience from day one, including users in Ghana, the United States, and other countries.
+
+Users should be able to describe a website or web application in natural language, generate a real project using an AI model, inspect and edit its source code, preview it, save and manage projects, and push their code to GitHub.
+
+The product must be a real, functional application—not merely a landing page, static mockup, or collection of nonfunctional dashboard screens.
+
+I have designed the visual direction in Google Stitch. I will provide the approved Stitch screenshots and, where available, exported design code or assets. Treat those approved references as the primary design specification.
+
+**IMPORTANT WORKING RULE: Begin with an audit and implementation plan. Do not modify files, install packages, change configuration, alter databases, connect live payment systems, push to GitHub, or deploy anything until I explicitly approve the audit findings and proposed implementation stage.**
+
+Do not assume that a design prototype already contains working application logic.
+
+---
+
+# PHASE 1 — INSPECT BEFORE IMPLEMENTING
+
+First, inspect the existing project and report:
+
+1. Current framework, programming languages, package manager, and project structure.
+2. Existing frontend pages, routes, reusable components, styling, and responsive behaviour.
+3. Existing backend architecture, API routes, authentication, database, and environment configuration.
+4. Existing AI provider integration, if any.
+5. Existing project generation, code editing, and preview mechanisms.
+6. Existing GitHub integration, if any.
+7. Existing payment, billing, plan, and usage mechanisms, if any.
+8. Security risks, missing dependencies, broken functionality, and implementation blockers.
+9. How the supplied Stitch design and original illustration can be integrated without unnecessary rewrites.
+10. The smallest safe implementation plan, including the files likely to require changes and how each stage will be tested.
+
+Do not invent information about the repository. Clearly distinguish verified findings from assumptions and missing configuration.
+
+Do not replace the existing project architecture simply because another architecture is preferred. Reuse working code wherever reasonable.
+
+After presenting the audit and proposed stages, stop and wait for my explicit approval before modifying anything.
+
+---
+
+# PHASE 2 — DESIGN FIDELITY AND RESPONSIVE FRONTEND
+
+## 2.1 Approved visual identity
+
+Use the supplied Stitch design as the source of truth for the visual appearance.
+
+The visual direction is:
+
+- Premium, professional, restrained dark SaaS design.
+- Near-black backgrounds and charcoal surfaces.
+- Bold white typography.
+- Carefully controlled red accents.
+- Clear alignment, consistent spacing, and readable interface elements.
+- Minimal decoration and no unnecessary visual effects.
+
+Use these design tokens as the initial reference, adjusting only when needed to match the approved Stitch design:
+
+- Main background: #0B0B0B.
+- Main surfaces: #141414.
+- Elevated surfaces: #1B1B1B.
+- Primary text: #FFFFFF.
+- Secondary text: #B0B0B0.
+- Borders: #303030.
+- Accent red: #E5484D.
+
+Do not introduce excessive gradients, neon lighting, sparkling particles, floating glowing dots, glitter, unnecessary animations, or decorative futuristic effects.
+
+The website must look like a professionally designed software product, not a generic AI-generated landing page.
+
+## 2.2 Original illustration
+
+Use my supplied red-hoodie person working on a laptop as the homepage hero artwork.
+
+Preserve the original illustration, including its character, hoodie, laptop, composition, and colours. Do not replace it with stock photography, another character, a generated human, or unrelated cybersecurity imagery.
+
+Use the second reference image only for its dark cinematic background atmosphere, bold typography, and clean navigation composition. Do not copy its barber subject matter.
+
+Integrate the original illustration into the approved dark design without unnecessary glow, sparkles, distortion, or cropping of important details.
+
+Use the actual supplied asset or an explicitly verified exported asset path. Do not pretend an asset exists if it has not been provided.
+
+## 2.3 Homepage
+
+Implement a clean public welcome page with a slim top navigation.
+
+Include:
+
+- AI Website Builder Studio wordmark.
+- How It Works.
+- Features.
+- Pricing.
+- Templates.
+- Log In.
+- Start Building Free.
+
+The initial hero should contain:
+
+Headline:
+“BUILD WEBSITES. BUILD APPS. BUILD WITH AI.”
+
+Supporting copy:
+“Turn your ideas into real websites and web apps. Generate code, edit your project, preview it live, and push your work to GitHub — all in one workspace.”
+
+Include the original red-hoodie illustration and a prominent prompt composer.
+
+Prompt placeholder:
+“Describe the website or app you want to build…”
+
+Include a Generate Project action and optional example prompts such as:
+
+- Build an online store.
+- Create a portfolio website.
+- Build a school website.
+- Create a business dashboard.
+
+Keep the welcome page clean. Do not place the full code editor, file explorer, live preview, admin dashboard, or lengthy pricing tables inside the initial hero.
+
+How It Works, Features, Pricing, and Templates must be accessible through the navigation, using clear dedicated routes or well-designed sections. Their content must not clutter the initial welcome screen.
+
+## 2.4 Responsive requirements
+
+Responsive design is mandatory from the beginning.
+
+Implement and test intentional layouts for mobile, tablet, and desktop.
+
+Representative test widths:
+
+- Mobile: 360px, 390px, and 430px.
+- Tablet: 768px.
+- Desktop: 1024px, 1440px, and wider.
+
+On mobile:
+
+- Use compact navigation.
+- Stack the hero content appropriately.
+- Preserve the illustration's important details.
+- Make the prompt composer comfortable to use.
+- Ensure buttons and inputs are touch-friendly.
+- Avoid horizontal overflow, clipped text, overlapping elements, and tiny controls.
+- Make tables, pricing cards, forms, and dialogs usable.
+
+Do not merely scale the desktop page down.
+
+---
+
+# PHASE 3 — AUTHENTICATION AND USER ACCOUNTS
+
+Implement secure user authentication using Firebase Authentication if it fits the inspected project architecture.
+
+Support:
+
+- Account registration.
+- Sign-in.
+- Sign-out.
+- Google sign-in where configured.
+- Password recovery.
+- Email verification where appropriate.
+- Protected account and project pages.
+- Clear loading, validation, success, and error states.
+
+Persist each user's projects and usage information under the correct authenticated user identity.
+
+Users must never be able to read or modify another user's private projects, credits, billing records, or account data by changing client-side identifiers.
+
+Enforce access control in backend APIs and database security rules. Hiding a button is not security.
+
+Do not assume Firebase is configured correctly without inspecting the existing project and environment.
+
+---
+
+# PHASE 4 — PROJECT CREATION AND AI GENERATION
+
+Build the actual project creation workflow.
+
+1. A visitor selects Log In or Start Building Free.
+2. The user authenticates or creates an account.
+3. The user enters a project name and describes the desired website or web application.
+4. The backend validates the request, user permissions, available credits, and usage limits.
+5. The AI provider generates the initial project files.
+6. The user is taken to the development workspace.
+7. The user can inspect the generated project, edit files, request changes, preview the result, save work, and push it to GitHub.
+
+Support project types and file structures appropriate to the existing architecture. Do not generate code that is merely displayed as text if the product promises a working preview.
+
+Use a real, supported AI model API. Inspect the available configuration and identify the required model and API credentials before enabling generation.
+
+Never expose AI provider secret keys in frontend code.
+
+Implement appropriate error handling, timeouts, request validation, and limits. Avoid infinite generation loops and uncontrolled repeated API calls.
+
+If the AI provider fails, the system must not incorrectly charge users for a generation that never completed. Define a safe credit reservation, reconciliation, and refund-on-failure process.
+
+Do not promise unlimited AI generation. Provider rate limits and actual inference costs must be respected.
+
+---
+
+# PHASE 5 — DEVELOPMENT WORKSPACE
+
+Create a dedicated development workspace separate from the public homepage.
+
+## Desktop layout
+
+Use three principal panels:
+
+### A. Project Explorer
+
+- Project name.
+- Expandable folders and files.
+- File selection.
+- Create, rename, and delete file actions.
+- Appropriate safeguards for destructive file operations.
+
+### B. AI Assistant and Code Editor
+
+- AI conversation history.
+- Prompt input for requesting code changes.
+- Source code editor with syntax highlighting.
+- File tabs and readable line numbers.
+- Generate, apply, review, undo, and revert actions where supported.
+- Clear feedback about pending changes and generation status.
+
+AI edits should be applied in a controlled manner. Where practical, allow users to inspect proposed changes before applying them.
+
+### C. Live Preview
+
+- Render the actual project in a safe preview environment.
+- Refresh and reload actions.
+- Desktop, tablet, and mobile preview controls.
+- Loading, empty, build-error, and runtime-error states.
+
+Do not execute arbitrary generated code with unrestricted access to server secrets or the host environment. Use an appropriate sandbox or isolation strategy based on the architecture.
+
+## Mobile workspace
+
+Do not squeeze three desktop panels into one phone screen.
+
+Provide clearly accessible tabs:
+
+- Files.
+- AI Chat / Code.
+- Preview.
+
+Display one main panel at a time, with a convenient way to switch between them.
+
+The editor must remain usable on mobile without causing the entire page to overflow horizontally.
+
+---
+
+# PHASE 6 — PROJECT LIBRARY AND DASHBOARD
+
+Create a protected user dashboard with:
+
+- Overview.
+- New Project.
+- My Projects.
+- Templates.
+- Usage and Credits.
+- Subscription and Billing.
+- Settings.
+- Account menu.
+
+Display recent projects with project names, preview thumbnails where available, last-modified dates, and project actions.
+
+Support:
+
+- Search and filtering.
+- Grid and list views where appropriate.
+- Rename.
+- Duplicate.
+- Delete with confirmation.
+- Empty states for new users.
+- Save status and appropriate recovery or error feedback.
+
+Persist project data and files securely. Do not store all users' projects in shared, publicly accessible storage.
+
+---
+
+# PHASE 7 — GITHUB INTEGRATION
+
+GitHub is the intended code-publishing integration.
+
+Do not add Render integration, hosting-provider integrations, deployment wizards, or automatic hosting workflows.
+
+Users will handle deployment independently outside this platform after pushing code to GitHub.
+
+Implement a secure GitHub workflow:
+
+1. Connect a GitHub account using an appropriate OAuth or supported authorization flow.
+2. Select an existing repository or create one where permissions allow.
+3. Select repository visibility.
+4. Choose a branch.
+5. Enter a commit message.
+6. Review files and changes.
+7. Confirm and push.
+8. Display progress, success, authentication errors, permission errors, and retry options.
+
+Requirements:
+
+- Use the official supported GitHub API and authentication practices.
+- Keep access tokens and refresh tokens on the server or in an appropriate secure credential store.
+- Request the minimum permissions required.
+- Respect repository visibility and private-repository settings.
+- Do not expose access tokens in browser storage, logs, URLs, or client-side bundles.
+- Avoid accidental overwrites and provide clear conflict handling.
+- Never report a successful push until GitHub confirms it.
+
+If GitHub configuration is unavailable, identify the missing setup and implement the integration only after approval and valid configuration.
+
+---
+
+# PHASE 8 — USAGE CREDITS AND AI COST CONTROLS
+
+Use a hybrid usage model:
+
+1. **Credits** control how much AI generation a customer can consume.
+2. **Model access** controls which supported AI capabilities are available.
+3. **Subscription plans** control access to features and usage allowances.
+
+Do not assume that every provider has equivalent low, medium, high, or thinking-level settings. Use only capabilities supported by the chosen model.
+
+Initial example plan concepts:
+
+- Free: no subscription charge, limited introductory or recurring credits, standard capabilities, basic project creation and editing.
+- Builder: paid plan with a larger credit allowance and additional capabilities.
+- Pro Builder: higher allowance and advanced supported capabilities.
+
+These are starting concepts, not final commercial commitments. Do not hard-code example prices or allowances throughout the application.
+
+Implement a server-controlled credit system with:
+
+- Credit balance.
+- Usage history.
+- Model and operation information.
+- Cost estimates where available.
+- Credit reservation and reconciliation.
+- Safe handling of concurrent requests.
+- Protection against double charging and replayed requests.
+- Restoration of credits after qualifying failures.
+- Rate limits and maximum request sizes.
+
+All authoritative credit deductions and balance changes must occur on the backend, not solely in browser code.
+
+---
+
+# PHASE 9 — PRICING AND CURRENCY
+
+The platform must support displaying plan prices in both:
+
+- Ghanaian cedi: GHS, displayed as GH₵.
+- US dollar: USD, displayed as $.
+
+The administrator must be able to configure separate GHS and USD prices for each plan.
+
+Do not assume the USD price must be automatically converted from the GHS price. Store and display each configured price explicitly.
+
+Currency selection must remain consistent across:
+
+- Pricing page.
+- Plan selection.
+- Checkout.
+- Subscription records.
+- Payment confirmation.
+- Receipts.
+- Transaction history.
+- Revenue reports.
+
+Use Paystack for payment processing, subject to verification of the capabilities available to my specific merchant account.
+
+**Important currency restriction:** Do not assume that a Ghana-based Paystack merchant account can directly charge transactions in USD merely because international customers can pay. Verify the supported transaction currencies and payment methods for the actual account before enabling USD checkout.
+
+If direct USD charging is unavailable, keep USD price display configurable but clearly distinguish display currency from actual transaction currency. Do not silently convert, mislabel the checkout currency, or claim USD was charged when the transaction was processed in GHS.
+
+---
+
+# PHASE 10 — PAYSTACK BILLING AND SUBSCRIPTIONS
+
+Use my own Paystack merchant account for this platform's payments only.
+
+Do not use another site's merchant credentials. Do not change payment settings belonging to unrelated applications.
+
+Before integrating live payments, inspect and report the required Paystack configuration, account currency limitations, supported payment methods, and subscription constraints.
+
+Requirements:
+
+- Initialize payments through a secure backend endpoint.
+- Keep Paystack secret keys server-side.
+- Validate the selected plan and authoritative price on the server.
+- Verify payment references with Paystack before activating a plan or granting paid credits.
+- Confirm expected amount and transaction currency.
+- Process payment callbacks and webhooks securely.
+- Verify webhook signatures using the supported Paystack method.
+- Handle duplicate webhook deliveries idempotently.
+- Distinguish pending, successful, failed, and refunded transactions.
+- Record payment references, currency, amount, plan, customer, and timestamps.
+- Grant paid entitlements only after authoritative payment verification.
+- Keep subscription and credit records consistent.
+- Prevent users from modifying client-side prices or granting themselves paid credits.
+
+Do not store secrets in frontend source code or commit them to GitHub.
+
+Do not connect live payment processing, modify merchant settings, or run real charges until I explicitly approve that stage.
+
+If recurring subscriptions are not supported for a selected currency or payment method, report the limitation and propose an appropriate alternative instead of pretending recurring billing is available.
+
+---
+
+# PHASE 11 — PRIVATE OWNER-ONLY ADMINISTRATOR DASHBOARD
+
+The platform must have a private administrator dashboard accessible only to the single Gmail address I will explicitly provide.
+
+**Before implementing administrator authorization, ask me which Gmail address must be the sole authorized administrator. Do not guess the address, use an example email as a real identity, or hard-code an unconfirmed account.**
+
+Enforce this restriction on the server and in appropriate database security rules. A hidden admin button or client-side email comparison alone is insufficient.
+
+The dashboard must include:
+
+## A. Overview
+
+- Total registered customers.
+- New registrations during a selected period.
+- Active users using a clearly defined activity window.
+- Free users.
+- Paying subscribers.
+- AI usage and estimated provider costs.
+- Revenue grouped by actual transaction currency.
+- Recent payments and account activity.
+
+Do not combine GHS and USD into a misleading single total. If a normalized reporting currency is later supported, document the conversion rate and reporting method.
+
+## B. Plan Management
+
+Allow the administrator to:
+
+- Create plans.
+- Edit plans.
+- Activate and deactivate plans.
+- Archive plans safely.
+- Set separate GHS and USD prices.
+- Configure billing intervals.
+- Configure credit allowances.
+- Configure model access.
+- Configure feature permissions.
+- Set usage limits.
+
+Customer-facing pricing and plan permissions must be loaded from authoritative backend configuration, not duplicated as hard-coded values in multiple frontend components.
+
+Changes to plans must be validated and recorded.
+
+## C. Customer Management
+
+Allow the administrator to search customers and inspect:
+
+- Account information.
+- Registration date.
+- Recent activity.
+- Current plan.
+- Credit balance.
+- Individual usage history.
+- Subscription status.
+- Payment history.
+
+Protect customer data and restrict access to authorized administration endpoints.
+
+## D. AI Usage and Spending Controls
+
+Provide visibility into:
+
+- Usage by customer.
+- Usage by model.
+- Usage by operation.
+- Credit consumption.
+- Estimated provider costs.
+- Failed generations.
+- Configurable spending limits.
+
+Provide a way to pause expensive AI features or disable new generation requests when necessary.
+
+## E. Payments and Subscriptions
+
+Display:
+
+- Transaction reference.
+- Customer.
+- Plan.
+- Amount.
+- Actual transaction currency.
+- Payment status.
+- Subscription status.
+- Payment timestamps.
+- Refund status where available.
+
+Keep payment status and subscription status distinct.
+
+## F. Audit Log
+
+Record important administrative actions, especially:
+
+- Plan creation and modification.
+- Price changes.
+- Credit allowance changes.
+- Feature and model permission changes.
+- Spending limit changes.
+- Customer entitlement adjustments.
+
+Store audit records securely so ordinary customers cannot modify them.
+
+## G. Security and usability
+
+- Do not expose admin controls to unauthorized users.
+- Enforce authorization on every sensitive backend endpoint.
+- Require confirmation for destructive actions.
+- Use pagination and filtering for large datasets.
+- Provide responsive layouts for mobile and desktop.
+- Do not include unnecessary customer secrets in administrative tables.
+
+---
+
+# PHASE 12 — DATA MODEL AND SECURITY
+
+Inspect the existing data model before proposing schema changes.
+
+Design appropriate persistent records for:
+
+- User profiles.
+- Projects and project files.
+- Usage and credit ledger.
+- Plans and plan configuration.
+- Subscriptions.
+- Payment transactions.
+- GitHub connections.
+- Administrator audit events.
+
+Use stable identifiers and ownership checks.
+
+Important requirements:
+
+- A user's projects must be isolated from other users.
+- Credit ledger entries must be auditable.
+- Payment references must be unique where appropriate.
+- Repeated webhook events must not grant credits repeatedly.
+- Administrative access must be verified server-side.
+- Secrets must not be exposed in browser code, client-readable databases, logs, or public repositories.
+- Validate user input on the server.
+- Apply rate limits and appropriate abuse prevention.
+- Use transactions or equivalent safe concurrency mechanisms where needed.
+
+Do not delete or overwrite existing user data when introducing new functionality. Propose migrations and backups before changing persistent schemas.
+
+---
+
+# PHASE 13 — TESTING AND ACCEPTANCE
+
+Implement and test features in stages.
+
+At minimum, prepare tests for:
+
+## Authentication and permissions
+- Unauthenticated users cannot access protected project operations.
+- Users cannot access another user's projects.
+- Non-administrators cannot access admin endpoints.
+- Only the confirmed administrator can perform administrative actions.
+
+## Project generation
+- Valid prompt generates a project.
+- Empty or invalid prompts are rejected.
+- Provider failures are handled safely.
+- Credits are reconciled correctly.
+- Concurrent requests cannot double-spend credits.
+
+## Workspace
+- Files can be inspected and edited.
+- Changes persist.
+- Preview states and errors are handled.
+- Responsive layouts work at representative viewport sizes.
+
+## GitHub
+- Authentication errors are handled.
+- Repository permissions are respected.
+- Push success is confirmed by GitHub.
+- Failed pushes are not reported as successful.
+
+## Payments
+- Invalid payment references are rejected.
+- Wrong amounts and currencies are rejected.
+- Pending transactions do not activate paid entitlements.
+- Duplicate webhooks do not grant duplicate credits.
+- Failed or refunded transactions are handled according to the approved business rules.
+
+## Responsive design
+- No unintended horizontal overflow.
+- Mobile navigation is usable.
+- Prompt composer fits mobile screens.
+- Workspace panels work through mobile tabs.
+- Pricing, billing, tables, and dialogs remain readable.
+
+Report actual test results. Do not claim tests passed unless they were executed.
+
+---
+
+# PHASE 14 — DEVELOPMENT AND RELEASE SAFETY
+
+Work in small, reviewable stages.
+
+Recommended sequence:
+
+1. Audit and implementation plan.
+2. Approved design system and responsive public homepage.
+3. Authentication and protected user dashboard.
+4. Project creation, AI generation, and development workspace.
+5. Persistent project storage and usage credits.
+6. GitHub integration.
+7. Plan configuration and pricing.
+8. Private administrator dashboard.
+9. Paystack test-mode integration and verification.
+10. Security testing, production readiness review, and deployment planning.
+
+Do not skip the audit simply because the visual design is ready.
+
+Do not make unrelated changes. Do not replace working functionality without explaining why.
+
+Do not deploy, push code, modify live production settings, or initiate live payments without my explicit approval.
+
+Keep development, test, and production environments distinct. Never expose production secrets in test environments or use real payment credentials in frontend code.
+
+---
+
+# FIRST RESPONSE REQUIRED
+
+For your first response, do not start coding.
+
+Instead:
+
+1. Confirm that you understand the approved Stitch design and all the product requirements in this brief.
+2. Inspect the current project and available files.
+3. Report the existing architecture and what is already implemented.
+4. Identify missing configuration, dependencies, security risks, and major blockers.
+5. Provide a concise staged implementation plan with the likely files or components involved.
+6. Identify which required credentials or account setup steps will eventually be needed without asking me to paste secret keys into chat.
+7. Ask for the single authorized administrator Gmail address before implementing admin authorization.
+8. Wait for my explicit approval before modifying files or settings.
+
+**The goal is to build a secure, responsive, genuinely functional AI Website Builder Studio that follows the approved Stitch design, supports real project generation and GitHub publishing, and has configurable plans, credits, billing, and a private administrator dashboard—without unexpected changes or deployment.**

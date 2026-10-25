@@ -1,0 +1,211 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>AI Website Builder Studio</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary": "#2d3038",
+            "on-secondary-fixed-variant": "#44474f",
+            "surface-dim": "#131315",
+            "surface-container-low": "#1c1b1e",
+            "tertiary-fixed": "#d4e4fa",
+            "secondary-container": "#44474f",
+            "on-tertiary-fixed-variant": "#39485a",
+            "on-tertiary": "#233143",
+            "on-primary-fixed": "#410006",
+            "on-primary-container": "#5c000c",
+            "on-secondary-fixed": "#191c22",
+            "on-error": "#690005",
+            "surface-container-lowest": "#0e0e10",
+            "tertiary-container": "#8392a6",
+            "on-primary-fixed-variant": "#930019",
+            "on-error-container": "#ffdad6",
+            "on-primary": "#68000f",
+            "surface-container-high": "#2a2a2c",
+            "surface-variant": "#353437",
+            "surface-tint": "#ffb3b0",
+            "error": "#ffb4ab",
+            "secondary": "#c4c6d0",
+            "outline": "#ac8886",
+            "primary-fixed": "#ffdad8",
+            "surface-bright": "#39393b",
+            "inverse-primary": "#bf0024",
+            "primary-container": "#ff5357",
+            "inverse-on-surface": "#313032",
+            "error-container": "#93000a",
+            "tertiary-fixed-dim": "#b9c8de",
+            "outline-variant": "#5c3f3e",
+            "on-surface": "#e5e1e4",
+            "on-tertiary-fixed": "#0d1c2d",
+            "primary": "#ffb3b0",
+            "surface": "#131315",
+            "background": "#131315",
+            "inverse-surface": "#e5e1e4",
+            "tertiary": "#b9c8de",
+            "on-background": "#e5e1e4",
+            "secondary-fixed-dim": "#c4c6d0",
+            "surface-container-highest": "#353437",
+            "surface-container": "#201f22",
+            "on-secondary-container": "#b3b5be",
+            "on-tertiary-container": "#1c2b3c",
+            "secondary-fixed": "#e0e2ec",
+            "on-surface-variant": "#e6bdba",
+            "primary-fixed-dim": "#ffb3b0"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "1.5rem",
+            "space-lg": "1.5rem",
+            "margin-mobile": "1.25rem",
+            "space-md": "1rem",
+            "space-xl": "2.5rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "margin": "3rem",
+            "gutter-sm": "1rem"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Plus Jakarta Sans"],
+            "body-md": ["Inter"],
+            "label-caps": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "display-hero-mobile": ["Plus Jakarta Sans"],
+            "body-lg": ["Inter"],
+            "body-sm": ["Inter"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "label-code": ["JetBrains Mono"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "display-hero": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+            "body-md": ["15px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-caps": ["11px", { "lineHeight": "14px", "fontWeight": "700" }],
+            "headline-lg": ["36px", { "lineHeight": "44px", "fontWeight": "700" }],
+            "display-hero-mobile": ["38px", { "lineHeight": "44px", "fontWeight": "800" }],
+            "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+            "body-sm": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+            "label-code": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "display-hero": ["64px", { "lineHeight": "72px", "fontWeight": "800" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+    /* Cinematic halo glow */
+    .crimson-glow {
+      box-shadow: 0 0 35px -5px rgba(255, 83, 87, 0.35);
+    }
+    .subtle-border {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-[#0B0B0B] text-[#FFFFFF] font-body-md min-h-screen antialiased flex flex-col items-center selection:bg-[#E5484D] selection:text-white">
+<!-- Mobile Viewport Wrapper (390px centered screen simulation) -->
+<div class="w-full max-w-[430px] min-h-screen bg-[#0B0B0B] relative flex flex-col overflow-x-hidden border-x border-[#303030]">
+<!-- Ambient Cinematic Lighting Bloom behind Hero -->
+
+
+<!-- TopAppBar (Shared Component Implementation) -->
+<header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-margin-mobile w-full max-w-[430px] mx-auto bg-[#0B0B0B]/90 backdrop-blur-md border-b border-[#303030] h-14"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[#E5484D] text-headline-sm" data-icon="terminal">terminal</span><a class="text-headline-sm font-headline-sm tracking-tight text-white uppercase inline-flex items-center gap-1.5" href="#"><span class="">AI WEBSITE</span><span class="text-[#E5484D] font-extrabold">BUILDER</span><span class="hidden xs:inline text-xs text-[#B0B0B0] font-medium border border-[#303030] px-1.5 py-0.5 rounded">STUDIO</span></a></div><div class="flex items-center gap-2"><button class="text-body-sm font-headline-sm px-3 py-1 rounded bg-[#1B1B1B] text-[#FFFFFF] border border-[#303030] hover:border-neutral-500 hover:text-white transition-colors duration-150 active:scale-95">Log In</button><button aria-label="Open Navigation" class="p-1.5 rounded-lg text-[#B0B0B0] hover:text-white hover:bg-[#1B1B1B] border border-transparent hover:border-[#303030] active:scale-95 transition-all duration-150" id="drawerToggle"><span class="material-symbols-outlined text-headline-sm" data-icon="menu">menu</span></button></div></header>
+<!-- Side NavigationDrawer (Shared Component Overlay) -->
+<div class="fixed inset-0 bg-surface-container-lowest/80 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300" id="drawerOverlay">
+<aside class="fixed inset-y-0 right-0 w-80 max-w-[85vw] bg-[#0B0B0B] border-l border-[#303030] flex flex-col h-full p-6 space-y-4 transform translate-x-full transition-transform duration-300" id="drawerContent"><div class="flex items-center justify-between pb-4 border-b border-[#303030]"><span class="text-sm font-headline-sm text-white font-bold tracking-wider uppercase">Studio Navigation</span><button class="p-1 rounded text-[#B0B0B0] hover:text-white hover:bg-[#1B1B1B] transition-colors" id="drawerClose"><span class="material-symbols-outlined" data-icon="close">close</span></button></div><nav class="flex flex-col gap-1.5 pt-2"><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-[#141414] border border-[#303030] text-white font-medium hover:bg-[#1B1B1B] transition-colors duration-150" href="#how-it-works"><span class="material-symbols-outlined text-[#E5484D]" data-icon="hub">hub</span><span class="text-body-md">How It Works</span></a><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[#B0B0B0] hover:bg-[#141414] hover:text-white border border-transparent hover:border-[#303030] transition-colors duration-150" href="#features"><span class="material-symbols-outlined text-[#B0B0B0]" data-icon="auto_awesome">auto_awesome</span><span class="text-body-md">Features</span></a><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[#B0B0B0] hover:bg-[#141414] hover:text-white border border-transparent hover:border-[#303030] transition-colors duration-150" href="#templates"><span class="material-symbols-outlined text-[#B0B0B0]" data-icon="dashboard">dashboard</span><span class="text-body-md">Templates</span></a><a class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[#B0B0B0] hover:bg-[#141414] hover:text-white border border-transparent hover:border-[#303030] transition-colors duration-150" href="#pricing"><span class="material-symbols-outlined text-[#B0B0B0]" data-icon="payments">payments</span><span class="text-body-md">Pricing</span></a></nav><div class="mt-auto pt-4 border-t border-[#303030] flex flex-col gap-3"><div class="flex items-center gap-2 text-label-code font-label-code text-[#B0B0B0] text-xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span class="">AI ENGINE V3.2 LIVE</span></div><a class="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-[#141414] border border-[#303030] text-white text-body-sm font-headline-sm hover:bg-[#1B1B1B] transition-colors" href="https://github.com" target="_blank"><span class="material-symbols-outlined text-sm" data-icon="terminal">terminal</span>Push to GitHub</a></div></aside>
+</div>
+<!-- Main Content Area -->
+<main class="flex-1 w-full pt-20 pb-10 px-margin-mobile flex flex-col relative z-10">
+<!-- Status Pill Tag -->
+<div class="self-start mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#141414] border border-[#303030]"><span class="w-1.5 h-1.5 rounded-full bg-[#E5484D]"></span><span class="text-label-caps font-label-caps text-[#B0B0B0] uppercase tracking-wider text-[10px]">Studio Cloud Core</span><span class="text-[#303030]">|</span><span class="text-label-code font-label-code text-white text-[11px]">Instant Deploy</span></div>
+<!-- Hero Headline & Copy -->
+<section class="space-y-3 mb-6"><h1 class="text-display-hero-mobile font-display-hero-mobile tracking-tight text-white uppercase leading-[1.15]">BUILD WEBSITES. BUILD APPS. BUILD WITH <span class="text-[#E5484D]">AI</span>.</h1><p class="text-body-md font-body-md text-[#B0B0B0] leading-relaxed">Turn your ideas into real websites and web apps. Generate code, edit your project, preview it live, and push your work to GitHub — all in one workspace.</p></section>
+<!-- Hero Artwork Integration -->
+<div class="relative w-full rounded-xl overflow-hidden mb-8 border border-[#303030] bg-[#141414]"><div class="relative w-full aspect-[4/3] flex items-center justify-center p-4 bg-[#141414]"><img alt="AI Developer in red hoodie generating software workspace" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYG4G9YSO8Asfyfqdu5O-ludD0oFoqnTNM1461_cd-OYNBOQ0ZzAy5UybHPwkSMPwecOYM6ArFBHMP5uIYzoCPhDs-oBaArYCT7VxZPl4yBrp-c_Wr3bqGn0B7RXjDzZdT8RBuayikJie1Nt_80UfSeZW62MsCNqZaTMjFZTbTPWh82V5Bjp7spRIsUTdkwW2_fclLdIKXuLpiZajnd57V-a7aMF7Wy_n4CZQ0FjeU0BhPqzJooy_RJE7D9cC0SMkraZG1FVcnHSFu2A"></div><div class="relative px-4 py-2 bg-[#0B0B0B] border-t border-[#303030] flex items-center justify-between text-label-code font-label-code text-[11px] text-[#B0B0B0]"><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#E5484D]"></span><span class="">Synthesizing Fullstack Stack</span></div><span class="text-[#B0B0B0] text-xs bg-[#1B1B1B] px-2 py-0.5 rounded border border-[#303030]">Ready</span></div></div>
+<!-- Quick Category Pills / Horizontal Secondary Navigation -->
+<div class="w-full mb-6 overflow-x-auto no-scrollbar py-1"><div class="flex items-center gap-2 whitespace-nowrap"><a class="px-3 py-1.5 rounded-lg bg-[#141414] text-body-sm font-headline-sm text-[#B0B0B0] hover:text-white hover:border-neutral-500 border border-[#303030] transition-all" href="#how-it-works">How It Works</a><a class="px-3 py-1.5 rounded-lg bg-[#141414] text-body-sm font-headline-sm text-[#B0B0B0] hover:text-white hover:border-neutral-500 border border-[#303030] transition-all" href="#features">Features</a><a class="px-3 py-1.5 rounded-lg bg-[#141414] text-body-sm font-headline-sm text-[#B0B0B0] hover:text-white hover:border-neutral-500 border border-[#303030] transition-all" href="#templates">Templates</a><a class="px-3 py-1.5 rounded-lg bg-[#141414] text-body-sm font-headline-sm text-[#B0B0B0] hover:text-white hover:border-neutral-500 border border-[#303030] transition-all" href="#pricing">Pricing</a></div></div>
+<!-- AI Prompt Composer Component -->
+<section class="w-full bg-[#141414] rounded-xl p-4 border border-[#303030] relative mb-6"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[#E5484D] text-headline-sm" data-icon="terminal">terminal</span><span class="text-label-caps font-label-caps text-white tracking-wider uppercase font-semibold text-xs">Project Generator</span></div><span class="text-label-code font-label-code text-[11px] text-[#B0B0B0] bg-[#1B1B1B] px-2 py-0.5 rounded border border-[#303030]">Tokens: 4k Free</span></div><form class="space-y-3.5" id="projectComposer" onsubmit="event.preventDefault();"><div class="relative"><textarea class="w-full bg-[#1B1B1B] text-white placeholder:text-[#B0B0B0]/60 rounded-lg p-3 text-body-md font-body-md border border-[#303030] focus:outline-none focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400 transition-all resize-none leading-relaxed" id="promptInput" placeholder="Describe the website or app you want to build..." rows="3"></textarea></div><div class="space-y-1.5"><span class="text-[11px] font-label-code text-[#B0B0B0]">Quick Starters:</span><div class="flex flex-wrap gap-1.5" id="suggestionChips"><button class="prompt-chip px-2.5 py-1 rounded bg-[#1B1B1B] text-[12px] font-body-sm text-[#B0B0B0] hover:text-white border border-[#303030] hover:border-neutral-500 active:scale-95 transition-all" type="button">Build an online store</button><button class="prompt-chip px-2.5 py-1 rounded bg-[#1B1B1B] text-[12px] font-body-sm text-[#B0B0B0] hover:text-white border border-[#303030] hover:border-neutral-500 active:scale-95 transition-all" type="button">Create a portfolio website</button><button class="prompt-chip px-2.5 py-1 rounded bg-[#1B1B1B] text-[12px] font-body-sm text-[#B0B0B0] hover:text-white border border-[#303030] hover:border-neutral-500 active:scale-95 transition-all" type="button">Build a school management website</button><button class="prompt-chip px-2.5 py-1 rounded bg-[#1B1B1B] text-[12px] font-body-sm text-[#B0B0B0] hover:text-white border border-[#303030] hover:border-neutral-500 active:scale-95 transition-all" type="button">Create a business dashboard</button></div></div><button class="w-full py-3 px-4 rounded-lg bg-[#E5484D] text-white font-headline-sm text-body-md font-semibold flex items-center justify-center gap-2 hover:bg-[#d43d42] active:scale-[0.98] transition-all" type="submit"><span class="">GENERATE PROJECT</span><span class="material-symbols-outlined text-headline-sm" data-icon="arrow_forward">arrow_forward</span></button></form><p class="text-center text-body-sm font-body-sm text-[#B0B0B0] mt-3">Start free. Bring your ideas to life.</p></section>
+<!-- Key Value Workflow Bento -->
+<section class="space-y-3 mb-8"><h2 class="text-headline-sm font-headline-sm text-white tracking-tight">Studio Workflow Engine</h2><div class="grid grid-cols-2 gap-2.5"><div class="p-3.5 rounded-lg bg-[#141414] border border-[#303030] space-y-1.5 hover:border-neutral-500 transition-colors"><span class="material-symbols-outlined text-[#E5484D]" data-icon="code">code</span><h3 class="text-body-md font-headline-sm text-white font-semibold">Live Code Gen</h3><p class="text-[12px] text-[#B0B0B0] leading-snug">Clean React, Tailwind, &amp; Next.js architectures generated instantly.</p></div><div class="p-3.5 rounded-lg bg-[#141414] border border-[#303030] space-y-1.5 hover:border-neutral-500 transition-colors"><span class="material-symbols-outlined text-[#E5484D]" data-icon="terminal">terminal</span><h3 class="text-body-md font-headline-sm text-white font-semibold">Direct GitHub Sync</h3><p class="text-[12px] text-[#B0B0B0] leading-snug">Automated commit, PR, and repo deployment with one keypress.</p></div><div class="p-3.5 rounded-lg bg-[#141414] border border-[#303030] space-y-1.5 hover:border-neutral-500 transition-colors"><span class="material-symbols-outlined text-[#E5484D]" data-icon="visibility">visibility</span><h3 class="text-body-md font-headline-sm text-white font-semibold">Live Preview</h3><p class="text-[12px] text-[#B0B0B0] leading-snug">Multi-device interactive sandboxes with zero setup overhead.</p></div><div class="p-3.5 rounded-lg bg-[#141414] border border-[#303030] space-y-1.5 hover:border-neutral-500 transition-colors"><span class="material-symbols-outlined text-[#E5484D]" data-icon="tune">tune</span><h3 class="text-body-md font-headline-sm text-white font-semibold">Inline Editor</h3><p class="text-[12px] text-[#B0B0B0] leading-snug">Refine designs, edit copy, and tailor layouts visually or via code.</p></div></div></section>
+<!-- Terminal Output Teaser -->
+<section class="p-3.5 rounded-lg bg-[#141414] border border-[#303030] font-label-code text-[11px] mb-8 space-y-2"><div class="flex items-center justify-between text-[#B0B0B0] border-b border-[#303030] pb-2"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#E5484D]"></span>terminal.builder.studio</span><span class="text-[10px] text-[#B0B0B0]/80">bash v5.2</span></div><p class="text-[#B0B0B0]">$ ai-studio create --template=saas-dashboard</p><p class="text-emerald-400">✓ Initialized Tailwind theme engine</p><p class="text-emerald-400">✓ Configured responsive mobile layout (390px)</p><p class="text-white font-medium">⚡ Compiling instant hot-reload canvas...</p></section>
+</main>
+<!-- Footer (Shared Component Implementation) -->
+<footer class="w-full py-8 px-margin-mobile flex flex-col items-center gap-4 bg-[#0B0B0B] border-t border-[#303030] mt-auto text-center"><div class="flex flex-wrap justify-center items-center gap-4 text-body-sm font-body-sm"><a class="text-[#B0B0B0] hover:text-white transition-colors duration-150" href="#how-it-works">How It Works</a><a class="text-[#B0B0B0] hover:text-white transition-colors duration-150" href="#features">Features</a><a class="text-[#B0B0B0] hover:text-white transition-colors duration-150" href="#pricing">Pricing</a><a class="text-[#B0B0B0] hover:text-white transition-colors duration-150" href="#templates">Templates</a><a class="text-[#B0B0B0] hover:text-white transition-colors duration-150 flex items-center gap-1" href="https://github.com" target="_blank"><span class="">GitHub</span><span class="material-symbols-outlined text-[13px]" data-icon="open_in_new">open_in_new</span></a></div><div class="text-headline-sm font-headline-sm text-white font-bold tracking-wider uppercase">AI WEBSITE <span class="text-[#E5484D]">BUILDER</span> STUDIO</div><p class="text-body-sm font-body-sm text-[#B0B0B0] max-w-xs leading-normal">© 2025 AI Website Builder Studio. All rights reserved. Start free. Bring your ideas to life.</p></footer>
+</div>
+<!-- Interactive Logic for Drawer & Chips -->
+<script>
+    const drawerToggle = document.getElementById('drawerToggle');
+    const drawerClose = document.getElementById('drawerClose');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    const drawerContent = document.getElementById('drawerContent');
+    const promptInput = document.getElementById('promptInput');
+    const promptChips = document.querySelectorAll('.prompt-chip');
+
+    function openDrawer() {
+      drawerOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      drawerOverlay.classList.add('opacity-100', 'pointer-events-auto');
+      drawerContent.classList.remove('translate-x-full');
+      drawerContent.classList.add('translate-x-0');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      drawerOverlay.classList.add('opacity-0', 'pointer-events-none');
+      drawerOverlay.classList.remove('opacity-100', 'pointer-events-auto');
+      drawerContent.classList.add('translate-x-full');
+      drawerContent.classList.remove('translate-x-0');
+      document.body.style.overflow = '';
+    }
+
+    drawerToggle.addEventListener('click', openDrawer);
+    drawerClose.addEventListener('click', closeDrawer);
+    drawerOverlay.addEventListener('click', (e) => {
+      if (e.target === drawerOverlay) closeDrawer();
+    });
+
+    // Populate prompt input on quick-chip tap
+    promptChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        promptInput.value = chip.textContent.trim();
+        promptInput.focus();
+      });
+    });
+  </script>
+
+
+</body></html>
