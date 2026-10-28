@@ -102,7 +102,7 @@ export const AdminVerificationModal: React.FC<AdminVerificationModalProps> = ({ 
                 </div>
                 <div className="flex justify-between border-b border-[#303030] pb-1">
                   <span className="text-[#B0B0B0]">Authority:</span>
-                  <span className="text-emerald-400">Strict Match (jeffreybonneya@gmail.com)</span>
+                  <span className="text-emerald-400">Strict Match (Designated Admin Allowlist)</span>
                 </div>
                 <div className="flex justify-between pt-1">
                   <span className="text-[#B0B0B0]">Verified At:</span>

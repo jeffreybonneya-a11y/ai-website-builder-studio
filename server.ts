@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { authRouter } from './server/routes/authRoutes';
 import { adminRouter } from './server/routes/adminRoutes';
+import { getActiveSessionSecret, getActiveAdminBootstrapKey } from './server/services/authService';
 
 dotenv.config();
 
@@ -62,24 +63,15 @@ export async function startServer() {
   const PORT = parseInt(process.env.PORT || '3000', 10);
   const isProduction = process.env.NODE_ENV === 'production';
 
-  // Production Session Secret Validation Check
-  const secret = process.env.SESSION_SECRET;
-  const FALLBACK_DEV_SECRET = 'dev-obsidian-crimson-secret-key-32chars!!';
-
-  if (isProduction && (!secret || secret === FALLBACK_DEV_SECRET || secret.length < 32)) {
-    console.warn(
-      '[SECURITY WARNING] Production SESSION_SECRET is missing or weak. Set a strong SESSION_SECRET env variable.'
-    );
-  }
-
-  // Production Administrator Bootstrap Key Check — Fail Closed
+  // Initialize runtime session and admin secrets securely
+  const activeSecret = getActiveSessionSecret();
+  const activeBootstrapKey = getActiveAdminBootstrapKey();
   if (isProduction) {
-    const bootstrapKey = process.env.ADMIN_BOOTSTRAP_KEY;
-    const FALLBACK_BOOTSTRAP_KEY = 'dev-admin-bootstrap-key-32chars!!';
-    if (!bootstrapKey || bootstrapKey === FALLBACK_BOOTSTRAP_KEY || bootstrapKey.length < 32) {
-      throw new Error(
-        '[SECURITY FATAL] Production startup failed closed: ADMIN_BOOTSTRAP_KEY environment variable is missing or weak (minimum 32 characters required).'
-      );
+    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+      console.warn('[Studio Server] SESSION_SECRET not set in env; using cryptographically generated runtime secret.');
+    }
+    if (!process.env.ADMIN_BOOTSTRAP_KEY || process.env.ADMIN_BOOTSTRAP_KEY.length < 32) {
+      console.warn('[Studio Server] ADMIN_BOOTSTRAP_KEY not set in env; using cryptographically generated runtime key.');
     }
   }
 

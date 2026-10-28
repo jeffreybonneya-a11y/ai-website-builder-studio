@@ -1,12 +1,12 @@
 {
-  "projectId": "alpine-hall-85v9p",
-  "appId": "1:1059725167953:web:46d3089274113f97d2d770",
-  "apiKey": "AIzaSyCeioEJM8bWLth3XFwmD5Rq--wqenRa6L4",
-  "authDomain": "alpine-hall-85v9p.firebaseapp.com",
+  "projectId": "ai-website-builder-studio",
+  "appId": "1:577945447956:web:fb37db67cd977a4fadc101",
+  "apiKey": "AIzaSyCKf9Kw6AeO8_WaFiJCf5myvHg4g06ayLA",
+  "authDomain": "ai-website-builder-studio.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-aiwebsitebuilder-40c23105-0070-4f65-88a8-0338c12cd85e",
-  "storageBucket": "alpine-hall-85v9p.firebasestorage.app",
-  "messagingSenderId": "1059725167953",
+  "storageBucket": "ai-website-builder-studio.firebasestorage.app",
+  "messagingSenderId": "577945447956",
   "measurementId": "",
-  "oAuthClientId": "1059725167953-2uijloiqvrumgis937kepus3rr1aqoi0.apps.googleusercontent.com",
+  "oAuthClientId": "577945447956-amtulg8ccnkmg3ojrr4e04d2u4qonhni.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

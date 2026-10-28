@@ -66,7 +66,7 @@ authRouter.post('/google', authLimiter, async (req: AuthenticatedRequest, res: R
     // Generate HttpOnly native session cookie
     let sessionCookie: string;
     try {
-      sessionCookie = await createSessionCookie(idToken);
+      sessionCookie = await createSessionCookie(idToken, 14 * 24 * 60 * 60 * 1000, decodedToken);
     } catch (cookieErr: unknown) {
       const message = cookieErr instanceof Error ? cookieErr.message : 'Session cookie creation failed';
       console.error(`[Auth Route Error] Native session-cookie creation failed: ${message}`);
@@ -141,7 +141,7 @@ authRouter.post(
         return;
       }
 
-      const updatedUser = await bootstrapAdminAccount(req.user!.uid, bootstrapKey);
+      const updatedUser = await bootstrapAdminAccount(req.user!.uid, bootstrapKey, req.user!.email);
 
       res.status(200).json({
         message: 'Administrator role successfully provisioned.',
