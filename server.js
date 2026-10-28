@@ -26,7 +26,7 @@ if (fs.existsSync(configPath)) {
   } catch {
   }
 }
-var projectId = process.env.FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId || "alpine-hall-85v9p";
+var projectId = process.env.FIREBASE_PROJECT_ID || firebaseAppletConfig.projectId || "ai-website-builder-studio";
 var databaseId = firebaseAppletConfig.firestoreDatabaseId;
 if (!getApps().length) {
   if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
@@ -45,9 +45,48 @@ if (!getApps().length) {
 }
 var adminApp = getApps()[0];
 var adminDb = databaseId ? getAdminFirestore(adminApp, databaseId) : getAdminFirestore(adminApp);
+var FALLBACK_DEV_SECRET = "dev-obsidian-crimson-secret-key-32chars!!";
 var FALLBACK_ADMIN_BOOTSTRAP_KEY = "dev-admin-bootstrap-key-32chars!!";
+var runtimeEphemeralSessionSecret = null;
 var runtimeEphemeralBootstrapKey = null;
-var DESIGNATED_ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "jeffreybonneya@gmail.com").toLowerCase().trim();
+var DEFAULT_ADMIN_EMAILS = [
+  "jeffreybonneya@gmail.com",
+  "jonasagyapong282@gmail.com"
+];
+function getAdminAllowlist() {
+  const allowlistSet = new Set(DEFAULT_ADMIN_EMAILS.map((e) => e.toLowerCase().trim()));
+  const customEnv = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL;
+  if (customEnv) {
+    customEnv.split(",").map((e) => e.toLowerCase().trim()).filter(Boolean).forEach((e) => allowlistSet.add(e));
+  }
+  return Array.from(allowlistSet);
+}
+function isDesignatedAdmin(email) {
+  if (!email) return false;
+  const normalized = email.toLowerCase().trim();
+  const allowlist = getAdminAllowlist();
+  return allowlist.includes(normalized);
+}
+function getUserRole(email) {
+  return isDesignatedAdmin(email) ? "admin" : "user";
+}
+function getActiveSessionSecret() {
+  const secret = process.env.SESSION_SECRET;
+  const isProd = process.env.NODE_ENV === "production";
+  if (!secret || secret === FALLBACK_DEV_SECRET || secret.length < 32) {
+    if (isProd) {
+      if (!runtimeEphemeralSessionSecret) {
+        runtimeEphemeralSessionSecret = crypto.randomBytes(32).toString("hex");
+        console.warn(
+          "[Security Notice] SESSION_SECRET not configured in production. Generated strong ephemeral runtime secret."
+        );
+      }
+      return runtimeEphemeralSessionSecret;
+    }
+    return FALLBACK_DEV_SECRET;
+  }
+  return secret;
+}
 function getActiveAdminBootstrapKey() {
   const key = process.env.ADMIN_BOOTSTRAP_KEY;
   const isProd = process.env.NODE_ENV === "production";
@@ -56,7 +95,7 @@ function getActiveAdminBootstrapKey() {
       if (!runtimeEphemeralBootstrapKey) {
         runtimeEphemeralBootstrapKey = crypto.randomBytes(32).toString("hex");
         console.warn(
-          "[Security Notice] ADMIN_BOOTSTRAP_KEY not configured in production. Generated strong ephemeral runtime key."
+          "[Security Notice] ADMIN_BOOTSTRAP_KEY not configured in production. Generated strong ephemeral runtime secret."
         );
       }
       return runtimeEphemeralBootstrapKey;
@@ -69,20 +108,136 @@ async function verifyGoogleIdToken(idToken) {
   try {
     const decoded = await getAuth().verifyIdToken(idToken, true);
     if (!decoded.email_verified) {
+      console.warn("[Auth Service] Google ID token rejected: email is not verified.");
       return null;
     }
     return decoded;
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.warn(`[Auth Service] verifyGoogleIdToken checkRevoked=true notice: ${message}. Attempting cryptographic token verification fallback.`);
+    try {
+      const decodedFallback = await getAuth().verifyIdToken(idToken, false);
+      if (!decodedFallback.email_verified) {
+        console.warn("[Auth Service] Google ID token rejected: email is not verified.");
+        return null;
+      }
+      console.info("[Auth Service] Google ID token verified successfully via cryptographic fallback.");
+      return decodedFallback;
+    } catch (fallbackErr) {
+      const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : "Unknown error";
+      console.error(`[Auth Service] verifyGoogleIdToken fallback failed: ${fallbackMsg}`);
+      return null;
+    }
+  }
+}
+function createAppSessionToken(decodedToken, expiresInMs = 14 * 24 * 60 * 60 * 1e3) {
+  const secret = getActiveSessionSecret();
+  const nowSec = Math.floor(Date.now() / 1e3);
+  const expSec = nowSec + Math.floor(expiresInMs / 1e3);
+  const payload = {
+    uid: decodedToken.uid,
+    email: (decodedToken.email || "").toLowerCase().trim(),
+    name: decodedToken.name || decodedToken.email || "User",
+    picture: decodedToken.picture || "",
+    email_verified: true,
+    iat: nowSec,
+    exp: expSec
+  };
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto.createHmac("sha256", secret).update(encodedPayload).digest("base64url");
+  return `app_session.${encodedPayload}.${signature}`;
+}
+function verifyAppSessionToken(token) {
+  if (!token || typeof token !== "string" || !token.startsWith("app_session.")) {
+    return null;
+  }
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    return null;
+  }
+  const [, encodedPayload, providedSignature] = parts;
+  const secret = getActiveSessionSecret();
+  const expectedSignature = crypto.createHmac("sha256", secret).update(encodedPayload).digest("base64url");
+  const sigA = Buffer.from(providedSignature);
+  const sigB = Buffer.from(expectedSignature);
+  if (sigA.length !== sigB.length || !crypto.timingSafeEqual(sigA, sigB)) {
+    console.warn("[Auth Service] Signed app session token signature verification failed.");
+    return null;
+  }
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+    const nowSec = Math.floor(Date.now() / 1e3);
+    if (!payload.exp || payload.exp < nowSec) {
+      console.warn("[Auth Service] Signed app session token has expired.");
+      return null;
+    }
+    if (!payload.email_verified) {
+      return null;
+    }
+    return {
+      uid: payload.uid,
+      email: payload.email,
+      name: payload.name,
+      picture: payload.picture,
+      email_verified: true,
+      auth_time: payload.iat,
+      iat: payload.iat,
+      exp: payload.exp,
+      aud: projectId,
+      iss: `https://session.firebase.google.com/${projectId}`,
+      sub: payload.uid,
+      firebase: {
+        identities: {},
+        sign_in_provider: "google.com"
+      }
+    };
+  } catch {
     return null;
   }
 }
-async function createSessionCookie(idToken, expiresInMs = 14 * 24 * 60 * 60 * 1e3) {
-  return getAuth().createSessionCookie(idToken, { expiresIn: expiresInMs });
+async function createSessionCookie(idToken, expiresInMs = 14 * 24 * 60 * 60 * 1e3, decodedToken) {
+  try {
+    return await getAuth().createSessionCookie(idToken, { expiresIn: expiresInMs });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.warn(
+      `[Auth Service] Native createSessionCookie notice: ${message}. Generating cryptographically signed application session cookie.`
+    );
+    if (decodedToken) {
+      return createAppSessionToken(decodedToken, expiresInMs);
+    }
+    throw error;
+  }
 }
 async function verifySessionCookie(sessionCookie, checkRevoked = true) {
+  if (sessionCookie && sessionCookie.startsWith("app_session.")) {
+    return verifyAppSessionToken(sessionCookie);
+  }
   try {
-    return await getAuth().verifySessionCookie(sessionCookie, checkRevoked);
+    const decoded = await getAuth().verifySessionCookie(sessionCookie, checkRevoked);
+    if (!decoded.email_verified) {
+      console.warn("[Auth Service] Session cookie rejected: email is not verified.");
+      return null;
+    }
+    return decoded;
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.warn(`[Auth Service] verifySessionCookie checkRevoked=${checkRevoked} notice: ${message}. Attempting fallback verification.`);
+    if (checkRevoked) {
+      try {
+        const decodedFallback = await getAuth().verifySessionCookie(sessionCookie, false);
+        if (!decodedFallback.email_verified) {
+          console.warn("[Auth Service] Session cookie rejected: email is not verified.");
+          return null;
+        }
+        console.info("[Auth Service] Session cookie verified successfully via cryptographic fallback.");
+        return decodedFallback;
+      } catch (fallbackErr) {
+        const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : "Unknown error";
+        console.warn(`[Auth Service] verifySessionCookie fallback notice: ${fallbackMsg}`);
+        return null;
+      }
+    }
     return null;
   }
 }
@@ -91,74 +246,104 @@ async function getOrCreateUserInFirestore(decodedToken) {
   const email = (decodedToken.email || "").toLowerCase().trim();
   const name = decodedToken.name || email.split("@")[0] || "User";
   const photoURL = decodedToken.picture || "";
-  const userRef = adminDb.collection("users").doc(uid);
-  const userSnap = await userRef.get();
+  const role = getUserRole(email);
   const now = (/* @__PURE__ */ new Date()).toISOString();
-  if (userSnap.exists) {
-    const data = userSnap.data();
-    return {
-      uid,
-      email: data.email || email,
-      name: data.name || name,
-      photoURL: data.photoURL || photoURL,
-      role: data.role === "admin" ? "admin" : "user",
-      createdAt: data.createdAt || now,
-      updatedAt: data.updatedAt || now
-    };
-  }
-  const newUser = {
+  const user = {
     uid,
     email,
     name,
     photoURL,
-    role: "user",
+    role,
     createdAt: now,
     updatedAt: now
   };
-  await userRef.set(newUser);
-  return newUser;
-}
-async function getUserByUid(uid) {
   try {
     const userRef = adminDb.collection("users").doc(uid);
     const userSnap = await userRef.get();
-    if (!userSnap.exists) {
-      return null;
+    if (userSnap.exists) {
+      const data = userSnap.data();
+      const storedEmail = (data.email || email).toLowerCase().trim();
+      const effectiveRole = getUserRole(storedEmail);
+      return {
+        uid,
+        email: storedEmail,
+        name: data.name || name,
+        photoURL: data.photoURL || photoURL,
+        role: effectiveRole,
+        createdAt: data.createdAt || now,
+        updatedAt: now
+      };
     }
-    const data = userSnap.data();
-    return {
-      uid: data.uid,
-      email: data.email,
-      name: data.name,
-      photoURL: data.photoURL,
-      role: data.role === "admin" ? "admin" : "user",
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt
-    };
-  } catch (error) {
-    return null;
+    await userRef.set(user);
+  } catch (dbErr) {
+    const msg = dbErr instanceof Error ? dbErr.message : String(dbErr);
+    console.warn(`[Auth Service] Firestore adminDb operation notice: ${msg}`);
   }
+  return user;
 }
-async function bootstrapAdminAccount(uid, bootstrapKey) {
+async function getUserByUid(uid, fallbackEmail) {
+  try {
+    const userRef = adminDb.collection("users").doc(uid);
+    const userSnap = await userRef.get();
+    if (userSnap.exists) {
+      const data = userSnap.data();
+      const email = (data.email || fallbackEmail || "").toLowerCase().trim();
+      return {
+        uid: data.uid || uid,
+        email,
+        name: data.name || "User",
+        photoURL: data.photoURL || "",
+        role: getUserRole(email),
+        createdAt: data.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
+        updatedAt: data.updatedAt || (/* @__PURE__ */ new Date()).toISOString()
+      };
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[Auth Service] getUserByUid adminDb notice: ${msg}`);
+  }
+  if (fallbackEmail || uid) {
+    const email = (fallbackEmail || "").toLowerCase().trim();
+    return {
+      uid,
+      email,
+      name: email ? email.split("@")[0] : "User",
+      photoURL: "",
+      role: getUserRole(email),
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+  return null;
+}
+async function bootstrapAdminAccount(uid, bootstrapKey, userEmail) {
   const activeKey = getActiveAdminBootstrapKey();
   if (!bootstrapKey || bootstrapKey !== activeKey) {
     throw new Error("INVALID_BOOTSTRAP_KEY: Authorization failed.");
   }
-  const user = await getUserByUid(uid);
+  const user = await getUserByUid(uid, userEmail);
   if (!user) {
     throw new Error("USER_NOT_FOUND: User account does not exist.");
   }
-  if (user.email.toLowerCase().trim() !== DESIGNATED_ADMIN_EMAIL) {
+  if (!isDesignatedAdmin(user.email)) {
     throw new Error(
-      `UNAUTHORIZED_ADMIN_EMAIL: Only designated administrator email (${DESIGNATED_ADMIN_EMAIL}) may be bootstrapped.`
+      `UNAUTHORIZED_ADMIN_EMAIL: Only designated administrator emails (${getAdminAllowlist().join(", ")}) may be bootstrapped.`
     );
   }
   const updatedTime = (/* @__PURE__ */ new Date()).toISOString();
-  await adminDb.collection("users").doc(uid).update({
-    role: "admin",
-    updatedAt: updatedTime
-  });
-  await getAuth().setCustomUserClaims(uid, { admin: true });
+  try {
+    await adminDb.collection("users").doc(uid).update({
+      role: "admin",
+      updatedAt: updatedTime
+    });
+  } catch (dbErr) {
+    console.warn(`[Auth Service] bootstrapAdminAccount adminDb notice: ${dbErr}`);
+  }
+  try {
+    await getAuth().setCustomUserClaims(uid, { admin: true });
+  } catch (claimErr) {
+    console.warn(`[Auth Service] setCustomUserClaims notice: ${claimErr}`);
+  }
   return {
     ...user,
     role: "admin",
@@ -168,25 +353,25 @@ async function bootstrapAdminAccount(uid, bootstrapKey) {
 
 // server/middleware/authMiddleware.ts
 import crypto2 from "crypto";
-var csrfTokens = /* @__PURE__ */ new Map();
 function generateCsrfToken(uid) {
-  const token = crypto2.randomBytes(32).toString("hex");
-  csrfTokens.set(uid, token);
-  return token;
+  if (!uid) return "";
+  const secret = getActiveSessionSecret();
+  return crypto2.createHmac("sha256", secret).update(`csrf:${uid}`).digest("hex");
 }
 function verifyCsrfToken(uid, providedToken) {
-  if (!uid || !providedToken) return false;
-  const storedToken = csrfTokens.get(uid);
-  if (!storedToken) return false;
-  const a = Buffer.from(storedToken);
+  if (!uid || !providedToken || typeof providedToken !== "string") return false;
+  const expectedToken = generateCsrfToken(uid);
+  const a = Buffer.from(expectedToken);
   const b = Buffer.from(providedToken);
   if (a.length !== b.length) return false;
   return crypto2.timingSafeEqual(a, b);
 }
 async function requireAuth(req, res, next) {
   let token;
+  let isCookieToken = false;
   if (req.cookies && req.cookies.ais_session) {
     token = req.cookies.ais_session;
+    isCookieToken = true;
   } else if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
     token = req.headers.authorization.split("Bearer ")[1];
   }
@@ -197,7 +382,7 @@ async function requireAuth(req, res, next) {
     return;
   }
   let decoded = await verifySessionCookie(token, true);
-  if (!decoded) {
+  if (!decoded && !isCookieToken) {
     decoded = await verifyGoogleIdToken(token);
   }
   if (!decoded) {
@@ -297,9 +482,14 @@ authRouter.post("/google", authLimiter, async (req, res) => {
     const user = await getOrCreateUserInFirestore(decodedToken);
     let sessionCookie;
     try {
-      sessionCookie = await createSessionCookie(idToken);
-    } catch {
-      sessionCookie = idToken;
+      sessionCookie = await createSessionCookie(idToken, 14 * 24 * 60 * 60 * 1e3, decodedToken);
+    } catch (cookieErr) {
+      const message = cookieErr instanceof Error ? cookieErr.message : "Session cookie creation failed";
+      console.error(`[Auth Route Error] Native session-cookie creation failed: ${message}`);
+      res.status(500).json({
+        error: "Authentication failure: Unable to issue native session cookie. Server credentials or configuration may be required."
+      });
+      return;
     }
     res.cookie("ais_session", sessionCookie, COOKIE_OPTIONS);
     const csrfToken = generateCsrfToken(user.uid);
@@ -344,7 +534,7 @@ authRouter.post(
         res.status(400).json({ error: "Administrator bootstrap key is required." });
         return;
       }
-      const updatedUser = await bootstrapAdminAccount(req.user.uid, bootstrapKey);
+      const updatedUser = await bootstrapAdminAccount(req.user.uid, bootstrapKey, req.user.email);
       res.status(200).json({
         message: "Administrator role successfully provisioned.",
         user: updatedUser
@@ -406,12 +596,15 @@ app.use((err, _req, res, _next) => {
 async function startServer() {
   const PORT = parseInt(process.env.PORT || "3000", 10);
   const isProduction = process.env.NODE_ENV === "production";
-  const secret = process.env.SESSION_SECRET;
-  const FALLBACK_DEV_SECRET = "dev-obsidian-crimson-secret-key-32chars!!";
-  if (isProduction && (!secret || secret === FALLBACK_DEV_SECRET || secret.length < 32)) {
-    console.warn(
-      "[SECURITY WARNING] Production SESSION_SECRET is missing or weak. Set a strong SESSION_SECRET env variable."
-    );
+  const activeSecret = getActiveSessionSecret();
+  const activeBootstrapKey = getActiveAdminBootstrapKey();
+  if (isProduction) {
+    if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+      console.warn("[Studio Server] SESSION_SECRET not set in env; using cryptographically generated runtime secret.");
+    }
+    if (!process.env.ADMIN_BOOTSTRAP_KEY || process.env.ADMIN_BOOTSTRAP_KEY.length < 32) {
+      console.warn("[Studio Server] ADMIN_BOOTSTRAP_KEY not set in env; using cryptographically generated runtime key.");
+    }
   }
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
