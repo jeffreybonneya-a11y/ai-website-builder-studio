@@ -4,6 +4,7 @@ import { Hero } from './components/Hero';
 import { PromptComposer } from './components/PromptComposer';
 import { WorkflowBento } from './components/WorkflowBento';
 import { TerminalTeaser } from './components/TerminalTeaser';
+import { Dashboard } from './components/dashboard/Dashboard';
 import { Footer } from './components/Footer';
 import { AuthModal } from './components/auth/AuthModal';
 import { AdminVerificationModal } from './components/admin/AdminVerificationModal';
@@ -17,8 +18,10 @@ import {
 import { useAuth } from './context/AuthContext';
 
 type ActiveSection = 'how-it-works' | 'features' | 'templates' | 'pricing' | 'login' | null;
+type ActiveView = 'landing' | 'dashboard';
 
 export default function App() {
+  const [activeView, setActiveView] = useState<ActiveView>('landing');
   const [activeSection, setActiveSection] = useState<ActiveSection>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [adminVerificationOpen, setAdminVerificationOpen] = useState(false);
@@ -26,6 +29,15 @@ export default function App() {
   const [viewportMode, setViewportMode] = useState<'responsive' | 'mobile390'>('responsive');
 
   const { isAuthenticated } = useAuth();
+
+  const handleNavigateView = (view: ActiveView) => {
+    if (view === 'dashboard' && !isAuthenticated) {
+      setAuthMode('login');
+      setActiveSection('login');
+      return;
+    }
+    setActiveView(view);
+  };
 
   const handleOpenSection = (section: NonNullable<ActiveSection>) => {
     if (section === 'login') {
@@ -43,11 +55,14 @@ export default function App() {
       setAuthMode('register');
       setActiveSection('login');
     } else {
-      const el = document.getElementById('promptInput');
-      if (el) {
-        el.focus();
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
+      setActiveView('landing');
+      setTimeout(() => {
+        const el = document.getElementById('promptInput');
+        if (el) {
+          el.focus();
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 50);
     }
   };
 
@@ -56,11 +71,14 @@ export default function App() {
   };
 
   const handleSelectTemplatePrompt = (templatePrompt: string) => {
-    const el = document.getElementById('promptInput') as HTMLTextAreaElement | null;
-    if (el) {
-      el.value = templatePrompt;
-      el.focus();
-    }
+    setActiveView('landing');
+    setTimeout(() => {
+      const el = document.getElementById('promptInput') as HTMLTextAreaElement | null;
+      if (el) {
+        el.value = templatePrompt;
+        el.focus();
+      }
+    }, 50);
   };
 
   return (
@@ -109,23 +127,40 @@ export default function App() {
           onOpenSection={handleOpenSection}
           onStartBuilding={handleStartBuilding}
           onVerifyAdminStatus={() => setAdminVerificationOpen(true)}
+          activeView={activeView}
+          onNavigateView={handleNavigateView}
         />
 
         {/* Main Content Area */}
         <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-          {/* Hero Section */}
-          <Hero />
+          {activeView === 'dashboard' && isAuthenticated ? (
+            <Dashboard
+              onOpenProject={() => {
+                setActiveView('landing');
+                setTimeout(() => {
+                  const el = document.getElementById('promptInput');
+                  if (el) {
+                    el.focus();
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 50);
+              }}
+            />
+          ) : (
+            <>
+              {/* Hero Section */}
+              <Hero />
 
-          {/* Prompt Composer */}
-          <PromptComposer
-            onGenerateClick={handleGenerateClick}
-          />
+              {/* Prompt Composer */}
+              <PromptComposer onGenerateClick={handleGenerateClick} />
 
-          {/* Workflow Bento Engine */}
-          <WorkflowBento />
+              {/* Workflow Bento Engine */}
+              <WorkflowBento />
 
-          {/* Terminal Teaser */}
-          <TerminalTeaser />
+              {/* Terminal Teaser */}
+              <TerminalTeaser />
+            </>
+          )}
         </main>
 
         {/* Footer */}

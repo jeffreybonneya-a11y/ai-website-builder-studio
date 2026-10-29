@@ -559,6 +559,203 @@ adminRouter.get("/verify", requireAdmin, (req, res) => {
   });
 });
 
+// server/routes/projectRoutes.ts
+import { Router as Router3 } from "express";
+
+// server/services/projectService.ts
+var memoryProjects = /* @__PURE__ */ new Map();
+async function getUserProjects(ownerId) {
+  const projects = [];
+  try {
+    const snap = await adminDb.collection("projects").where("ownerId", "==", ownerId).get();
+    snap.forEach((doc) => {
+      projects.push(doc.data());
+    });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[Project Service] getUserProjects adminDb notice: ${msg}`);
+    memoryProjects.forEach((proj) => {
+      if (proj.ownerId === ownerId) {
+        projects.push(proj);
+      }
+    });
+  }
+  return projects.sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+}
+async function getProjectById(id, ownerId) {
+  try {
+    const docRef = adminDb.collection("projects").doc(id);
+    const snap = await docRef.get();
+    if (snap.exists) {
+      const proj = snap.data();
+      if (proj.ownerId === ownerId) {
+        return proj;
+      }
+      return null;
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[Project Service] getProjectById adminDb notice: ${msg}`);
+    const memProj = memoryProjects.get(id);
+    if (memProj && memProj.ownerId === ownerId) {
+      return memProj;
+    }
+  }
+  return null;
+}
+async function createProject(ownerId, data) {
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const id = `proj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const project = {
+    id,
+    ownerId,
+    title: data.title.trim(),
+    description: data.description ? data.description.trim() : "",
+    status: data.status || "draft",
+    createdAt: now,
+    updatedAt: now
+  };
+  memoryProjects.set(id, project);
+  try {
+    await adminDb.collection("projects").doc(id).set(project);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[Project Service] createProject adminDb notice: ${msg}`);
+  }
+  return project;
+}
+async function updateProject(id, ownerId, updates) {
+  const existing = await getProjectById(id, ownerId);
+  if (!existing) {
+    return null;
+  }
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const updatedProject = {
+    ...existing,
+    title: updates.title !== void 0 ? updates.title.trim() : existing.title,
+    description: updates.description !== void 0 ? updates.description.trim() : existing.description,
+    status: updates.status || existing.status,
+    updatedAt: now
+  };
+  memoryProjects.set(id, updatedProject);
+  try {
+    await adminDb.collection("projects").doc(id).set(updatedProject, { merge: true });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[Project Service] updateProject adminDb notice: ${msg}`);
+  }
+  return updatedProject;
+}
+async function deleteProject(id, ownerId) {
+  const existing = await getProjectById(id, ownerId);
+  if (!existing) {
+    return false;
+  }
+  memoryProjects.delete(id);
+  try {
+    await adminDb.collection("projects").doc(id).delete();
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[Project Service] deleteProject adminDb notice: ${msg}`);
+  }
+  return true;
+}
+
+// server/routes/projectRoutes.ts
+var projectRouter = Router3();
+projectRouter.use(requireAuth);
+projectRouter.get("/", async (req, res) => {
+  try {
+    const ownerId = req.user.uid;
+    const projects = await getUserProjects(ownerId);
+    res.status(200).json({ projects });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to fetch projects";
+    res.status(500).json({ error: message });
+  }
+});
+projectRouter.post("/", requireCsrf, async (req, res) => {
+  try {
+    const ownerId = req.user.uid;
+    const { title, description, status } = req.body || {};
+    if (!title || typeof title !== "string" || title.trim().length === 0) {
+      res.status(400).json({ error: "Project title is required and cannot be empty." });
+      return;
+    }
+    if (title.trim().length > 200) {
+      res.status(400).json({ error: "Project title cannot exceed 200 characters." });
+      return;
+    }
+    const project = await createProject(ownerId, { title, description, status });
+    res.status(201).json({
+      message: "Project created successfully.",
+      project
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to create project";
+    res.status(500).json({ error: message });
+  }
+});
+projectRouter.get("/:id", async (req, res) => {
+  try {
+    const ownerId = req.user.uid;
+    const { id } = req.params;
+    const project = await getProjectById(id, ownerId);
+    if (!project) {
+      res.status(404).json({ error: "Project not found or access denied." });
+      return;
+    }
+    res.status(200).json({ project });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to fetch project";
+    res.status(500).json({ error: message });
+  }
+});
+projectRouter.put("/:id", requireCsrf, async (req, res) => {
+  try {
+    const ownerId = req.user.uid;
+    const { id } = req.params;
+    const { title, description, status } = req.body || {};
+    if (title !== void 0 && (typeof title !== "string" || title.trim().length === 0)) {
+      res.status(400).json({ error: "Project title cannot be empty." });
+      return;
+    }
+    if (title && title.trim().length > 200) {
+      res.status(400).json({ error: "Project title cannot exceed 200 characters." });
+      return;
+    }
+    const updated = await updateProject(id, ownerId, { title, description, status });
+    if (!updated) {
+      res.status(404).json({ error: "Project not found or access denied." });
+      return;
+    }
+    res.status(200).json({
+      message: "Project updated successfully.",
+      project: updated
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to update project";
+    res.status(500).json({ error: message });
+  }
+});
+projectRouter.delete("/:id", requireCsrf, async (req, res) => {
+  try {
+    const ownerId = req.user.uid;
+    const { id } = req.params;
+    const deleted = await deleteProject(id, ownerId);
+    if (!deleted) {
+      res.status(404).json({ error: "Project not found or access denied." });
+      return;
+    }
+    res.status(200).json({ message: "Project deleted successfully.", id });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to delete project";
+    res.status(500).json({ error: message });
+  }
+});
+
 // server.ts
 dotenv.config();
 var __filename = fileURLToPath(import.meta.url);
@@ -569,7 +766,9 @@ app.use(
   helmet({
     contentSecurityPolicy: false,
     // Disabled for Vite client bundle compatibility in dev/preview
-    crossOriginEmbedderPolicy: false
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
+    // Allows Firebase OAuth popup window.opener communication
   })
 );
 app.use(express.json({ limit: "100kb" }));
@@ -584,6 +783,7 @@ app.get("/api/health", (_req, res) => {
 });
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/projects", projectRouter);
 app.use((err, _req, res, _next) => {
   const message = err instanceof Error ? err.message : "Unknown error";
   if (process.env.NODE_ENV !== "test") {

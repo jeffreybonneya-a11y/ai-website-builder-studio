@@ -5,12 +5,16 @@ interface NavbarProps {
   onOpenSection: (section: 'how-it-works' | 'features' | 'templates' | 'pricing' | 'login') => void;
   onStartBuilding: () => void;
   onVerifyAdminStatus?: () => void;
+  activeView?: 'landing' | 'dashboard';
+  onNavigateView?: (view: 'landing' | 'dashboard') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenSection,
   onStartBuilding,
   onVerifyAdminStatus,
+  activeView = 'landing',
+  onNavigateView,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -24,40 +28,65 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="material-symbols-outlined text-[#E5484D] text-2xl" aria-hidden="true">
               terminal
             </span>
-            <a
-              href="#"
-              className="text-base sm:text-lg font-display tracking-tight text-white uppercase inline-flex items-center gap-1.5 font-bold"
+            <button
+              onClick={() => onNavigateView?.('landing')}
+              className="text-base sm:text-lg font-display tracking-tight text-white uppercase inline-flex items-center gap-1.5 font-bold cursor-pointer text-left"
             >
               <span>AI WEBSITE</span>
               <span className="text-[#E5484D] font-extrabold">BUILDER</span>
               <span className="hidden xs:inline text-[10px] text-[#B0B0B0] font-mono border border-[#303030] px-1.5 py-0.5 rounded bg-[#141414]">
                 STUDIO
               </span>
-            </a>
+            </button>
           </div>
 
           {/* Desktop Nav Items */}
           <nav className="hidden md:flex items-center gap-6">
+            {isAuthenticated && (
+              <button
+                onClick={() => onNavigateView?.('dashboard')}
+                className={`text-sm font-bold transition-colors duration-150 cursor-pointer flex items-center gap-1.5 ${
+                  activeView === 'dashboard'
+                    ? 'text-[#E5484D] font-mono uppercase tracking-wide'
+                    : 'text-[#B0B0B0] hover:text-white'
+                }`}
+              >
+                <span className="material-symbols-outlined text-base">folder_open</span>
+                <span>My Projects</span>
+              </button>
+            )}
             <button
-              onClick={() => onOpenSection('how-it-works')}
+              onClick={() => {
+                onNavigateView?.('landing');
+                onOpenSection('how-it-works');
+              }}
               className="text-sm font-medium text-[#B0B0B0] hover:text-white transition-colors duration-150 cursor-pointer"
             >
               How It Works
             </button>
             <button
-              onClick={() => onOpenSection('features')}
+              onClick={() => {
+                onNavigateView?.('landing');
+                onOpenSection('features');
+              }}
               className="text-sm font-medium text-[#B0B0B0] hover:text-white transition-colors duration-150 cursor-pointer"
             >
               Features
             </button>
             <button
-              onClick={() => onOpenSection('templates')}
+              onClick={() => {
+                onNavigateView?.('landing');
+                onOpenSection('templates');
+              }}
               className="text-sm font-medium text-[#B0B0B0] hover:text-white transition-colors duration-150 cursor-pointer"
             >
               Templates
             </button>
             <button
-              onClick={() => onOpenSection('pricing')}
+              onClick={() => {
+                onNavigateView?.('landing');
+                onOpenSection('pricing');
+              }}
               className="text-sm font-medium text-[#B0B0B0] hover:text-white transition-colors duration-150 cursor-pointer"
             >
               Pricing
@@ -189,12 +218,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
 
             <nav className="flex flex-col gap-2 pt-2">
+              {isAuthenticated && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onNavigateView?.('dashboard');
+                  }}
+                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg border text-left cursor-pointer transition-colors ${
+                    activeView === 'dashboard'
+                      ? 'bg-[#E5484D] text-white border-[#E5484D] font-bold'
+                      : 'bg-[#141414] text-[#E5484D] border-[#303030] hover:bg-[#1B1B1B]'
+                  }`}
+                >
+                  <span className="material-symbols-outlined">folder_open</span>
+                  <span>My Projects</span>
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
+                  onNavigateView?.('landing');
                   onOpenSection('how-it-works');
                 }}
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg bg-[#141414] border border-[#303030] text-white font-medium hover:bg-[#1B1B1B] transition-colors text-left"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[#B0B0B0] hover:bg-[#141414] hover:text-white border border-transparent hover:border-[#303030] transition-colors text-left"
               >
                 <span className="material-symbols-outlined text-[#E5484D]">hub</span>
                 <span>How It Works</span>

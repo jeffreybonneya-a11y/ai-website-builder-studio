@@ -36,6 +36,17 @@ service cloud.firestore {
         data.createdAt is string;
     }
 
+    function isValidProject(data) {
+      return data.keys().hasAll(['id', 'ownerId', 'title', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'ownerId', 'title', 'description', 'status', 'createdAt', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.ownerId is string && data.ownerId.size() <= 128 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+        (!('status' in data) || data.status in ['draft', 'published', 'archived']) &&
+        data.createdAt is string;
+    }
+
     // Default Deny All
     match /{document=**} {
       allow read, write: if false;
@@ -66,6 +77,30 @@ service cloud.firestore {
         );
         
       allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // Projects Collection
+    match /projects/{projectId} {
+      allow get: if isValidId(projectId) && (isOwner(existing().ownerId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      
+      allow create: if isValidId(projectId) &&
+        isValidProject(incoming()) &&
+        incoming().id == projectId &&
+        incoming().ownerId == request.auth.uid;
+        
+      allow update: if isValidId(projectId) &&
+        (
+          isAdmin() ||
+          (
+            isOwner(existing().ownerId) &&
+            isValidProject(incoming()) &&
+            incoming().id == existing().id &&
+            incoming().ownerId == existing().ownerId
+          )
+        );
+        
+      allow delete: if isValidId(projectId) && (isOwner(existing().ownerId) || isAdmin());
     }
   }
 }

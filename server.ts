@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { authRouter } from './server/routes/authRoutes';
 import { adminRouter } from './server/routes/adminRoutes';
+import { projectRouter } from './server/routes/projectRoutes';
 import { getActiveSessionSecret, getActiveAdminBootstrapKey } from './server/services/authService';
 
 dotenv.config();
@@ -42,9 +43,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
-// Authentication & Authorization Routes
+// Authentication, Authorization & Project Routes
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/projects', projectRouter);
 
 // Centralized Error Handling Middleware
 // Never exposes stack traces or sensitive environment variables in responses
