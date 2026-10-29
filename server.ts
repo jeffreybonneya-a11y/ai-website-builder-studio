@@ -23,6 +23,7 @@ app.use(
   helmet({
     contentSecurityPolicy: false, // Disabled for Vite client bundle compatibility in dev/preview
     crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }, // Allows Firebase OAuth popup window.opener communication
   })
 );
 
