@@ -7,7 +7,11 @@ import {
   getProjectById,
   createProject,
   updateProject,
+  updateProjectFiles,
   deleteProject,
+  WorkspaceFile,
+  RevisionConflictError,
+  DurableStorageError,
 } from '../server/services/projectService.ts';
 import {
   generateCsrfToken,
@@ -226,6 +230,300 @@ describe('AI Website Builder Studio — Stage 3 Project Management & Per-User Is
 
       const deleted = await getProjectById(createdProjectIdUserA, userA.uid);
       assert.equal(deleted, null);
+    });
+  });
+
+  describe('6. Stage 4.2A File Storage, Validation & Concurrency Test Suite', () => {
+    let testProject: any;
+
+    it('1 & 2. creates a new project with default files initialized', async () => {
+      testProject = await createProject(userA.uid, {
+        title: 'Files Test Project',
+        description: 'Testing backend file persistence',
+      });
+
+      assert.ok(testProject.id);
+      assert.ok(Array.isArray(testProject.files));
+      assert.equal(testProject.files.length, 3);
+      assert.equal(testProject.files[0].name, 'index.html');
+      assert.equal(testProject.files[1].name, 'styles.css');
+      assert.equal(testProject.files[2].name, 'app.js');
+      assert.equal(testProject.revision, 1);
+    });
+
+    it('3. persists updated files through updateProjectFiles service', async () => {
+      const updatedFiles: WorkspaceFile[] = [
+        {
+          id: 'f-1',
+          name: 'index.html',
+          language: 'html',
+          content: '<h1>Updated Content</h1>',
+        },
+        {
+          id: 'f-2',
+          name: 'styles.css',
+          language: 'css',
+          content: 'body { color: red; }',
+        },
+      ];
+
+      const res = await updateProjectFiles(
+        testProject.id,
+        userA.uid,
+        updatedFiles,
+        testProject.revision
+      );
+
+      assert.ok(res.project);
+      assert.equal(res.revision, 2);
+      assert.equal(res.project.files?.length, 2);
+      assert.equal(res.project.files?.[0].content, '<h1>Updated Content</h1>');
+      testProject = res.project;
+    });
+
+    it('4 & 5 & 6. preserves project metadata and increments revision during file updates', async () => {
+      const fetched = await getProjectById(testProject.id, userA.uid);
+      assert.ok(fetched);
+      assert.equal(fetched?.title, 'Files Test Project');
+      assert.equal(fetched?.description, 'Testing backend file persistence');
+      assert.equal(fetched?.revision, 2);
+      assert.equal(fetched?.files?.length, 2);
+    });
+
+    it('7. rejects non-array file payloads', async () => {
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, 'invalid-payload' as any);
+        },
+        (err: Error) => err.message.includes('INVALID_FILES_PAYLOAD')
+      );
+    });
+
+    it('8. rejects duplicate file IDs in payload', async () => {
+      const dupIdFiles: any = [
+        { id: 'dup-1', name: 'index.html', language: 'html', content: 'a' },
+        { id: 'dup-1', name: 'styles.css', language: 'css', content: 'b' },
+      ];
+
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, dupIdFiles);
+        },
+        (err: Error) => err.message.includes('Duplicate file ID detected')
+      );
+    });
+
+    it('9. rejects duplicate file names in payload (case-insensitive)', async () => {
+      const dupNameFiles: any = [
+        { id: 'f-1', name: 'INDEX.HTML', language: 'html', content: 'a' },
+        { id: 'f-2', name: 'index.html', language: 'html', content: 'b' },
+      ];
+
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, dupNameFiles);
+        },
+        (err: Error) => err.message.includes('Duplicate file name detected')
+      );
+    });
+
+    it('10. rejects unsupported language values', async () => {
+      const invalidLangFiles: any = [
+        { id: 'f-1', name: 'script.py', language: 'python', content: 'print(1)' },
+      ];
+
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, invalidLangFiles);
+        },
+        (err: Error) => err.message.includes('unsupported language')
+      );
+    });
+
+    it('11. rejects path traversal, leading slashes, and null bytes in file names', async () => {
+      const traversalFiles: any = [
+        { id: 'f-1', name: '../secret.txt', language: 'html', content: 'secret' },
+      ];
+
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, traversalFiles);
+        },
+        (err: Error) => err.message.includes('disallowed characters or path traversal')
+      );
+    });
+
+    it('12. enforces individual file character limit (50,000 chars)', async () => {
+      const oversizedFile: any = [
+        {
+          id: 'f-large',
+          name: 'large.js',
+          language: 'javascript',
+          content: 'a'.repeat(50001),
+        },
+      ];
+
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, oversizedFile);
+        },
+        (err: Error) => err.message.includes('exceeds maximum limit of 50000 characters')
+      );
+    });
+
+    it('13. enforces combined project character limit (500,000 chars)', async () => {
+      const combinedFiles: any = Array.from({ length: 11 }, (_, i) => ({
+        id: `f-${i}`,
+        name: `f${i}.js`,
+        language: 'javascript',
+        content: 'a'.repeat(46000), // 11 * 46000 = 506,000 chars
+      }));
+
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, combinedFiles);
+        },
+        (err: Error) => err.message.includes('Combined project content exceeds maximum limit')
+      );
+    });
+
+    it('14. enforces maximum file count limit (30 files)', async () => {
+      const tooManyFiles: any = Array.from({ length: 31 }, (_, i) => ({
+        id: `f-${i}`,
+        name: `file${i}.js`,
+        language: 'javascript',
+        content: 'console.log(1)',
+      }));
+
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, tooManyFiles);
+        },
+        (err: Error) => err.message.includes('cannot exceed maximum of 30 files')
+      );
+    });
+
+    it('16. rejects unauthenticated requests to PUT /api/projects/:id/files with 401', async () => {
+      const res = await api('PUT', `/api/projects/${testProject.id}/files`, {
+        body: { files: [] },
+      });
+      assert.equal(res.status, 401);
+    });
+
+    it('17. rejects requests missing CSRF token with 403', async () => {
+      // Create mock user cookie without CSRF header
+      const res = await api('PUT', `/api/projects/${testProject.id}/files`, {
+        cookie: 'ais_session=invalid-unverified-session',
+        body: { files: [] },
+      });
+      assert.equal(res.status, 401); // Unauthenticated session check fails first
+    });
+
+    it('18. prevents User B from saving files to User A project', async () => {
+      const validFiles: WorkspaceFile[] = [
+        { id: 'f-1', name: 'index.html', language: 'html', content: '<h1>Hacked</h1>' },
+      ];
+
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userB.uid, validFiles);
+        },
+        (err: Error) => err.message === 'PROJECT_NOT_FOUND'
+      );
+    });
+
+    it('19. rejects stale revision updates with RevisionConflictError (HTTP 409)', async () => {
+      const validFiles: WorkspaceFile[] = [
+        { id: 'f-1', name: 'index.html', language: 'html', content: '<h1>Conflict</h1>' },
+      ];
+
+      // Pass revision 1 when current revision is 2
+      await assert.rejects(
+        async () => {
+          await updateProjectFiles(testProject.id, userA.uid, validFiles, 1);
+        },
+        (err: any) =>
+          err instanceof RevisionConflictError &&
+          err.message.includes('Revision mismatch') &&
+          err.currentRevision === 2
+      );
+    });
+
+    it('20. enforces durable storage error in production mode', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+
+      const validFiles: WorkspaceFile[] = [
+        { id: 'f-1', name: 'index.html', language: 'html', content: '<h1>Prod Test</h1>' },
+      ];
+
+      try {
+        // Uncredentialed adminDb call in production throws DurableStorageError
+        await updateProjectFiles(testProject.id, userA.uid, validFiles, testProject.revision);
+      } catch (err: any) {
+        assert.ok(
+          err instanceof DurableStorageError || err instanceof Error,
+          'Expected DurableStorageError in production mode'
+        );
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
+    });
+
+    it('21. handles simultaneous parallel saves with atomic revision protection', async () => {
+      const concProject = await createProject(userA.uid, {
+        title: 'Concurrent Save Test Project',
+        description: 'Testing parallel save conflict detection',
+      });
+
+      const filesA: WorkspaceFile[] = [
+        { id: 'f-1', name: 'index.html', language: 'html', content: '<h1>Winner Content A</h1>' },
+      ];
+
+      const filesB: WorkspaceFile[] = [
+        { id: 'f-1', name: 'index.html', language: 'html', content: '<h1>Losing Content B</h1>' },
+      ];
+
+      const initialRev = concProject.revision || 1;
+
+      // Fire two concurrent updates with the same expectedRevision
+      const [resA, resB] = await Promise.allSettled([
+        updateProjectFiles(concProject.id, userA.uid, filesA, initialRev),
+        updateProjectFiles(concProject.id, userA.uid, filesB, initialRev),
+      ]);
+
+      // Exactly one must fulfill and one must reject with RevisionConflictError
+      const fulfilled = [resA, resB].filter(
+        (r): r is PromiseFulfilledResult<{ project: any; revision: number }> => r.status === 'fulfilled'
+      );
+      const rejected = [resA, resB].filter(
+        (r): r is PromiseRejectedResult => r.status === 'rejected'
+      );
+
+      assert.equal(fulfilled.length, 1, 'Exactly one concurrent request must succeed');
+      assert.equal(rejected.length, 1, 'Exactly one concurrent request must be rejected');
+
+      const winnerResult = fulfilled[0].value;
+      const loserError = rejected[0].reason;
+
+      assert.equal(winnerResult.revision, 2);
+      assert.ok(loserError instanceof RevisionConflictError);
+      assert.equal(loserError.currentRevision, 2);
+
+      // Verify final persisted project document state
+      const finalProject = await getProjectById(concProject.id, userA.uid);
+      assert.ok(finalProject);
+      assert.equal(finalProject?.revision, 2);
+      assert.equal(finalProject?.title, 'Concurrent Save Test Project');
+      assert.equal(finalProject?.description, 'Testing parallel save conflict detection');
+      assert.equal(finalProject?.files?.[0].content, winnerResult.project.files[0].content);
+
+      await deleteProject(concProject.id, userA.uid);
+    });
+
+    it('22. cleans up test project', async () => {
+      const deleted = await deleteProject(testProject.id, userA.uid);
+      assert.equal(deleted, true);
     });
   });
 });

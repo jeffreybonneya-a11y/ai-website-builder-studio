@@ -7,12 +7,17 @@ import {
   ProjectModalData,
 } from './ProjectModals';
 
+import { WorkspaceFile } from '../workspace/FileExplorer';
+
 export interface Project {
   id: string;
   ownerId: string;
   title: string;
   description: string;
   status: 'draft' | 'published' | 'archived';
+  files?: WorkspaceFile[];
+  activeFileId?: string;
+  revision?: number;
   createdAt: string;
   updatedAt: string;
 }

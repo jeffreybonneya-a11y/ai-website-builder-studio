@@ -4,7 +4,8 @@ import { Hero } from './components/Hero';
 import { PromptComposer } from './components/PromptComposer';
 import { WorkflowBento } from './components/WorkflowBento';
 import { TerminalTeaser } from './components/TerminalTeaser';
-import { Dashboard } from './components/dashboard/Dashboard';
+import { Dashboard, Project } from './components/dashboard/Dashboard';
+import { Workspace } from './components/workspace/Workspace';
 import { Footer } from './components/Footer';
 import { AuthModal } from './components/auth/AuthModal';
 import { AdminVerificationModal } from './components/admin/AdminVerificationModal';
@@ -18,10 +19,11 @@ import {
 import { useAuth } from './context/AuthContext';
 
 type ActiveSection = 'how-it-works' | 'features' | 'templates' | 'pricing' | 'login' | null;
-type ActiveView = 'landing' | 'dashboard';
+type ActiveView = 'landing' | 'dashboard' | 'workspace';
 
 export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>('landing');
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [activeSection, setActiveSection] = useState<ActiveSection>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [adminVerificationOpen, setAdminVerificationOpen] = useState(false);
@@ -31,7 +33,7 @@ export default function App() {
   const { isAuthenticated } = useAuth();
 
   const handleNavigateView = (view: ActiveView) => {
-    if (view === 'dashboard' && !isAuthenticated) {
+    if ((view === 'dashboard' || view === 'workspace') && !isAuthenticated) {
       setAuthMode('login');
       setActiveSection('login');
       return;
@@ -132,22 +134,23 @@ export default function App() {
         />
 
         {/* Main Content Area */}
-        <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-          {activeView === 'dashboard' && isAuthenticated ? (
-            <Dashboard
-              onOpenProject={() => {
-                setActiveView('landing');
-                setTimeout(() => {
-                  const el = document.getElementById('promptInput');
-                  if (el) {
-                    el.focus();
-                    el.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }, 50);
-              }}
+        <main className="flex-1 w-full flex flex-col items-center">
+          {activeView === 'workspace' && currentProject && isAuthenticated ? (
+            <Workspace
+              project={currentProject}
+              onBackToProjects={() => setActiveView('dashboard')}
             />
+          ) : activeView === 'dashboard' && isAuthenticated ? (
+            <div className="w-full px-4 sm:px-6 lg:px-8">
+              <Dashboard
+                onOpenProject={(project) => {
+                  setCurrentProject(project);
+                  setActiveView('workspace');
+                }}
+              />
+            </div>
           ) : (
-            <>
+            <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
               {/* Hero Section */}
               <Hero />
 
@@ -159,7 +162,7 @@ export default function App() {
 
               {/* Terminal Teaser */}
               <TerminalTeaser />
-            </>
+            </div>
           )}
         </main>
 

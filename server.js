@@ -563,6 +563,196 @@ adminRouter.get("/verify", requireAdmin, (req, res) => {
 import { Router as Router3 } from "express";
 
 // server/services/projectService.ts
+function getDefaultProjectFiles() {
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  return [
+    {
+      id: "file-index-html",
+      name: "index.html",
+      language: "html",
+      content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sample Website</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="badge">AI STUDIO WORKSPACE</div>
+    <h1>Welcome to Your Project</h1>
+    <p>This is a starter website layout generated for your project workspace.</p>
+    <button id="ctaBtn" class="btn">Explore Features</button>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>`,
+      updatedAt: now
+    },
+    {
+      id: "file-styles-css",
+      name: "styles.css",
+      language: "css",
+      content: `body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #0b0b0b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 520px;
+  padding: 2.5rem;
+  background-color: #141414;
+  border: 1px solid #303030;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: rgba(229, 72, 77, 0.15);
+  border: 1px solid rgba(229, 72, 77, 0.4);
+  color: #e5484d;
+  font-size: 0.75rem;
+  font-family: monospace;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #ffffff;
+  margin-top: 0;
+  font-size: 1.75rem;
+}
+
+p {
+  color: #b0b0b0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.btn {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #e5484d;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn:hover {
+  background-color: #d43d42;
+}`,
+      updatedAt: now
+    },
+    {
+      id: "file-app-js",
+      name: "app.js",
+      language: "javascript",
+      content: `// Sample Client-Side JavaScript
+document.addEventListener('DOMContentLoaded', () => {
+  const button = document.getElementById('ctaBtn');
+  if (button) {
+    button.addEventListener('click', () => {
+      alert('Sample Button Interactivity Working!');
+    });
+  }
+});`,
+      updatedAt: now
+    }
+  ];
+}
+var MAX_FILES_PER_PROJECT = 30;
+var MAX_CHAR_PER_FILE = 5e4;
+var MAX_COMBINED_CHAR_PER_PROJECT = 5e5;
+var MAX_SERIALIZED_BYTES = 75e4;
+var ALLOWED_LANGUAGES = ["html", "css", "javascript", "json"];
+function validateWorkspaceFiles(files) {
+  if (!Array.isArray(files)) {
+    return { valid: false, error: "Files payload must be an array." };
+  }
+  if (files.length > MAX_FILES_PER_PROJECT) {
+    return {
+      valid: false,
+      error: `Project cannot exceed maximum of ${MAX_FILES_PER_PROJECT} files. Got ${files.length}.`
+    };
+  }
+  const seenIds = /* @__PURE__ */ new Set();
+  const seenNames = /* @__PURE__ */ new Set();
+  let totalChars = 0;
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    if (!file || typeof file !== "object") {
+      return { valid: false, error: `Invalid file entry at index ${i}.` };
+    }
+    if (!file.id || typeof file.id !== "string" || file.id.trim().length === 0) {
+      return { valid: false, error: `File at index ${i} is missing a valid ID.` };
+    }
+    const cleanId = file.id.trim();
+    if (seenIds.has(cleanId)) {
+      return { valid: false, error: `Duplicate file ID detected: '${cleanId}'.` };
+    }
+    seenIds.add(cleanId);
+    if (!file.name || typeof file.name !== "string" || file.name.trim().length === 0) {
+      return { valid: false, error: `File '${cleanId}' is missing a valid name.` };
+    }
+    const fileName = file.name.trim();
+    if (fileName.includes("..") || fileName.includes("\\") || fileName.startsWith("/") || fileName.includes("\0") || !/^[a-zA-Z0-9_\-\.\/]+$/.test(fileName)) {
+      return {
+        valid: false,
+        error: `File name '${fileName}' contains disallowed characters or path traversal patterns.`
+      };
+    }
+    const lowerName = fileName.toLowerCase();
+    if (seenNames.has(lowerName)) {
+      return { valid: false, error: `Duplicate file name detected: '${fileName}'.` };
+    }
+    seenNames.add(lowerName);
+    if (!ALLOWED_LANGUAGES.includes(file.language)) {
+      return {
+        valid: false,
+        error: `File '${fileName}' has unsupported language '${file.language}'. Allowed: ${ALLOWED_LANGUAGES.join(", ")}.`
+      };
+    }
+    if (typeof file.content !== "string") {
+      return { valid: false, error: `File '${fileName}' content must be a string.` };
+    }
+    if (file.content.length > MAX_CHAR_PER_FILE) {
+      return {
+        valid: false,
+        error: `File '${fileName}' exceeds maximum limit of ${MAX_CHAR_PER_FILE} characters. Got ${file.content.length}.`
+      };
+    }
+    totalChars += file.content.length;
+  }
+  if (totalChars > MAX_COMBINED_CHAR_PER_PROJECT) {
+    return {
+      valid: false,
+      error: `Combined project content exceeds maximum limit of ${MAX_COMBINED_CHAR_PER_PROJECT} characters. Got ${totalChars}.`
+    };
+  }
+  const serializedBytes = Buffer.byteLength(JSON.stringify(files), "utf8");
+  if (serializedBytes > MAX_SERIALIZED_BYTES) {
+    return {
+      valid: false,
+      error: `Serialized file payload (${serializedBytes} bytes) exceeds safety limit of ${MAX_SERIALIZED_BYTES} bytes.`
+    };
+  }
+  return { valid: true };
+}
 var memoryProjects = /* @__PURE__ */ new Map();
 async function getUserProjects(ownerId) {
   const projects = [];
@@ -580,40 +770,59 @@ async function getUserProjects(ownerId) {
       }
     });
   }
+  projects.forEach((p) => {
+    if (!p.files || p.files.length === 0) {
+      p.files = getDefaultProjectFiles();
+      p.activeFileId = p.files[0]?.id;
+      p.revision = p.revision || 1;
+    }
+  });
   return projects.sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 }
 async function getProjectById(id, ownerId) {
+  let proj = null;
   try {
     const docRef = adminDb.collection("projects").doc(id);
     const snap = await docRef.get();
     if (snap.exists) {
-      const proj = snap.data();
-      if (proj.ownerId === ownerId) {
-        return proj;
+      const data = snap.data();
+      if (data.ownerId === ownerId) {
+        proj = data;
       }
-      return null;
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     console.warn(`[Project Service] getProjectById adminDb notice: ${msg}`);
     const memProj = memoryProjects.get(id);
     if (memProj && memProj.ownerId === ownerId) {
-      return memProj;
+      proj = memProj;
     }
+  }
+  if (proj) {
+    if (!proj.files || proj.files.length === 0) {
+      proj.files = getDefaultProjectFiles();
+      proj.activeFileId = proj.files[0]?.id;
+      proj.revision = proj.revision || 1;
+    }
+    return proj;
   }
   return null;
 }
 async function createProject(ownerId, data) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const id = `proj_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const defaultFiles = getDefaultProjectFiles();
   const project = {
     id,
     ownerId,
     title: data.title.trim(),
     description: data.description ? data.description.trim() : "",
     status: data.status || "draft",
+    files: defaultFiles,
+    activeFileId: defaultFiles[0]?.id,
+    revision: 1,
     createdAt: now,
     updatedAt: now
   };
@@ -647,6 +856,126 @@ async function updateProject(id, ownerId, updates) {
     console.warn(`[Project Service] updateProject adminDb notice: ${msg}`);
   }
   return updatedProject;
+}
+var RevisionConflictError = class extends Error {
+  constructor(message, currentRevision) {
+    super(message);
+    this.name = "RevisionConflictError";
+    this.currentRevision = currentRevision;
+  }
+};
+var DurableStorageError = class extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "DurableStorageError";
+  }
+};
+var projectLocks = /* @__PURE__ */ new Map();
+async function withProjectLock(projectId2, fn) {
+  const currentLock = projectLocks.get(projectId2) || Promise.resolve();
+  let releaseLock;
+  const newLock = new Promise((resolve) => {
+    releaseLock = resolve;
+  });
+  projectLocks.set(projectId2, currentLock.then(() => newLock));
+  try {
+    await currentLock;
+    return await fn();
+  } finally {
+    releaseLock();
+    if (projectLocks.get(projectId2) === newLock) {
+      projectLocks.delete(projectId2);
+    }
+  }
+}
+async function updateProjectFilesInMemory(id, ownerId, incomingFiles, expectedRevision, activeFileId) {
+  return withProjectLock(id, async () => {
+    const existing = memoryProjects.get(id);
+    if (!existing || existing.ownerId !== ownerId) {
+      throw new Error("PROJECT_NOT_FOUND");
+    }
+    const currentRevision = existing.revision || 1;
+    if (expectedRevision !== void 0 && expectedRevision !== currentRevision) {
+      throw new RevisionConflictError(
+        `Revision mismatch. Current revision is ${currentRevision}, but expected ${expectedRevision}.`,
+        currentRevision
+      );
+    }
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const nextRevision = currentRevision + 1;
+    const sanitizedFiles = incomingFiles.map((f) => ({
+      id: f.id.trim(),
+      name: f.name.trim(),
+      language: f.language,
+      content: f.content,
+      updatedAt: f.updatedAt || now
+    }));
+    const updatedProject = {
+      ...existing,
+      files: sanitizedFiles,
+      activeFileId: activeFileId || existing.activeFileId || sanitizedFiles[0]?.id,
+      revision: nextRevision,
+      updatedAt: now
+    };
+    memoryProjects.set(id, updatedProject);
+    return { project: updatedProject, revision: nextRevision };
+  });
+}
+async function updateProjectFiles(id, ownerId, incomingFiles, expectedRevision, activeFileId) {
+  const validation = validateWorkspaceFiles(incomingFiles);
+  if (!validation.valid) {
+    throw new Error(`INVALID_FILES_PAYLOAD: ${validation.error}`);
+  }
+  const docRef = adminDb.collection("projects").doc(id);
+  try {
+    const result = await adminDb.runTransaction(async (transaction) => {
+      const snap = await transaction.get(docRef);
+      if (!snap.exists) {
+        throw new Error("PROJECT_NOT_FOUND");
+      }
+      const data = snap.data();
+      if (data.ownerId !== ownerId) {
+        throw new Error("PROJECT_NOT_FOUND");
+      }
+      const currentRevision = data.revision || 1;
+      if (expectedRevision !== void 0 && expectedRevision !== currentRevision) {
+        throw new RevisionConflictError(
+          `Revision mismatch. Current revision is ${currentRevision}, but expected ${expectedRevision}.`,
+          currentRevision
+        );
+      }
+      const now = (/* @__PURE__ */ new Date()).toISOString();
+      const nextRevision = currentRevision + 1;
+      const sanitizedFiles = incomingFiles.map((f) => ({
+        id: f.id.trim(),
+        name: f.name.trim(),
+        language: f.language,
+        content: f.content,
+        updatedAt: f.updatedAt || now
+      }));
+      const updatedProject = {
+        ...data,
+        files: sanitizedFiles,
+        activeFileId: activeFileId || data.activeFileId || sanitizedFiles[0]?.id,
+        revision: nextRevision,
+        updatedAt: now
+      };
+      transaction.set(docRef, updatedProject, { merge: true });
+      return { project: updatedProject, revision: nextRevision };
+    });
+    memoryProjects.set(id, result.project);
+    return result;
+  } catch (error) {
+    if (error instanceof RevisionConflictError || error instanceof Error && (error.message === "PROJECT_NOT_FOUND" || error.message.startsWith("INVALID_FILES_PAYLOAD:"))) {
+      throw error;
+    }
+    const msg = error instanceof Error ? error.message : String(error);
+    console.warn(`[Project Service] updateProjectFiles adminDb transaction notice: ${msg}`);
+    if (process.env.NODE_ENV === "production") {
+      throw new DurableStorageError(`Failed to persist project files to Cloud Firestore: ${msg}`);
+    }
+    return await updateProjectFilesInMemory(id, ownerId, incomingFiles, expectedRevision, activeFileId);
+  }
 }
 async function deleteProject(id, ownerId) {
   const existing = await getProjectById(id, ownerId);
@@ -737,6 +1066,46 @@ projectRouter.put("/:id", requireCsrf, async (req, res) => {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to update project";
+    res.status(500).json({ error: message });
+  }
+});
+projectRouter.put("/:id/files", requireCsrf, async (req, res) => {
+  try {
+    const ownerId = req.user.uid;
+    const { id } = req.params;
+    const { files, expectedRevision, activeFileId } = req.body || {};
+    if (!files || !Array.isArray(files)) {
+      res.status(400).json({ error: "Files payload must be an array." });
+      return;
+    }
+    const result = await updateProjectFiles(id, ownerId, files, expectedRevision, activeFileId);
+    res.status(200).json({
+      message: "Project files saved successfully.",
+      project: result.project,
+      revision: result.revision
+    });
+  } catch (err) {
+    if (err instanceof RevisionConflictError) {
+      res.status(409).json({
+        error: "REVISION_CONFLICT",
+        message: err.message,
+        currentRevision: err.currentRevision
+      });
+      return;
+    }
+    if (err instanceof DurableStorageError) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    const message = err instanceof Error ? err.message : "Failed to save project files.";
+    if (message === "PROJECT_NOT_FOUND") {
+      res.status(404).json({ error: "Project not found or access denied." });
+      return;
+    }
+    if (message.startsWith("INVALID_FILES_PAYLOAD:")) {
+      res.status(400).json({ error: message.replace("INVALID_FILES_PAYLOAD: ", "") });
+      return;
+    }
     res.status(500).json({ error: message });
   }
 });

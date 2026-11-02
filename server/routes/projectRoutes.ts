@@ -9,7 +9,10 @@ import {
   getProjectById,
   createProject,
   updateProject,
+  updateProjectFiles,
   deleteProject,
+  RevisionConflictError,
+  DurableStorageError,
 } from '../services/projectService';
 
 export const projectRouter = Router();
@@ -117,6 +120,57 @@ projectRouter.put('/:id', requireCsrf, async (req: AuthenticatedRequest, res: Re
 });
 
 /**
+ * PUT /api/projects/:id/files - Update workspace files for a project owned by the authenticated user (Requires CSRF)
+ */
+projectRouter.put('/:id/files', requireCsrf, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const ownerId = req.user!.uid;
+    const { id } = req.params;
+    const { files, expectedRevision, activeFileId } = req.body || {};
+
+    if (!files || !Array.isArray(files)) {
+      res.status(400).json({ error: 'Files payload must be an array.' });
+      return;
+    }
+
+    const result = await updateProjectFiles(id, ownerId, files, expectedRevision, activeFileId);
+    res.status(200).json({
+      message: 'Project files saved successfully.',
+      project: result.project,
+      revision: result.revision,
+    });
+  } catch (err: unknown) {
+    if (err instanceof RevisionConflictError) {
+      res.status(409).json({
+        error: 'REVISION_CONFLICT',
+        message: err.message,
+        currentRevision: err.currentRevision,
+      });
+      return;
+    }
+
+    if (err instanceof DurableStorageError) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    const message = err instanceof Error ? err.message : 'Failed to save project files.';
+
+    if (message === 'PROJECT_NOT_FOUND') {
+      res.status(404).json({ error: 'Project not found or access denied.' });
+      return;
+    }
+
+    if (message.startsWith('INVALID_FILES_PAYLOAD:')) {
+      res.status(400).json({ error: message.replace('INVALID_FILES_PAYLOAD: ', '') });
+      return;
+    }
+
+    res.status(500).json({ error: message });
+  }
+});
+
+/**
  * DELETE /api/projects/:id - Delete a project owned by the authenticated user (Requires CSRF)
  */
 projectRouter.delete('/:id', requireCsrf, async (req: AuthenticatedRequest, res: Response) => {
@@ -136,3 +190,4 @@ projectRouter.delete('/:id', requireCsrf, async (req: AuthenticatedRequest, res:
     res.status(500).json({ error: message });
   }
 });
+

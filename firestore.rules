@@ -38,12 +38,15 @@ service cloud.firestore {
 
     function isValidProject(data) {
       return data.keys().hasAll(['id', 'ownerId', 'title', 'createdAt']) &&
-        data.keys().hasOnly(['id', 'ownerId', 'title', 'description', 'status', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'ownerId', 'title', 'description', 'status', 'files', 'activeFileId', 'revision', 'createdAt', 'updatedAt']) &&
         data.id is string && data.id.size() <= 128 &&
         data.ownerId is string && data.ownerId.size() <= 128 &&
         data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
         (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
         (!('status' in data) || data.status in ['draft', 'published', 'archived']) &&
+        (!('files' in data) || data.files is list) &&
+        (!('activeFileId' in data) || (data.activeFileId is string && data.activeFileId.size() <= 128)) &&
+        (!('revision' in data) || data.revision is number) &&
         data.createdAt is string;
     }
 

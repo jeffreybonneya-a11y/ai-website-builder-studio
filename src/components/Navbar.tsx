@@ -5,8 +5,8 @@ interface NavbarProps {
   onOpenSection: (section: 'how-it-works' | 'features' | 'templates' | 'pricing' | 'login') => void;
   onStartBuilding: () => void;
   onVerifyAdminStatus?: () => void;
-  activeView?: 'landing' | 'dashboard';
-  onNavigateView?: (view: 'landing' | 'dashboard') => void;
+  activeView?: 'landing' | 'dashboard' | 'workspace';
+  onNavigateView?: (view: 'landing' | 'dashboard' | 'workspace') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
