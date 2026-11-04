@@ -27,7 +27,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onOpenProject }) => {
-  const { user, csrfToken } = useAuth();
+  const { user, csrfToken, loginWithGoogle } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,11 +74,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenProject }) => {
     title: string,
     description: string,
     status: 'draft' | 'published' | 'archived'
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
+      let activeCsrf = csrfToken;
+      if (!activeCsrf) {
+        try {
+          const meRes = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            if (meData.csrfToken) activeCsrf = meData.csrfToken;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
+      if (activeCsrf) {
+        headers['x-csrf-token'] = activeCsrf;
       }
 
       const res = await fetch('/api/projects', {
@@ -88,20 +101,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenProject }) => {
         body: JSON.stringify({ title, description, status }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to create project');
+        return {
+          success: false,
+          error: data.error || 'Failed to create project.',
+        };
       }
 
-      const data = await res.json();
       if (data.project) {
         setProjects((prev) => [data.project, ...prev]);
-        return true;
+        return { success: true };
       }
-      return false;
-    } catch (err) {
+      return { success: false, error: 'Project data not returned by server.' };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to create project.';
       console.error('Create project error:', err);
-      return false;
+      return { success: false, error: msg };
     }
   };
 
@@ -111,11 +128,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenProject }) => {
     title: string,
     description: string,
     status: 'draft' | 'published' | 'archived'
-  ): Promise<boolean> => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
+      let activeCsrf = csrfToken;
+      if (!activeCsrf) {
+        try {
+          const meRes = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            if (meData.csrfToken) activeCsrf = meData.csrfToken;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
+      if (activeCsrf) {
+        headers['x-csrf-token'] = activeCsrf;
       }
 
       const res = await fetch(`/api/projects/${id}`, {
@@ -125,29 +155,46 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenProject }) => {
         body: JSON.stringify({ title, description, status }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to update project');
+        return {
+          success: false,
+          error: data.error || 'Failed to update project.',
+        };
       }
 
-      const data = await res.json();
       if (data.project) {
         setProjects((prev) => prev.map((p) => (p.id === id ? data.project : p)));
-        return true;
+        return { success: true };
       }
-      return false;
-    } catch (err) {
+      return { success: false, error: 'Failed to update project.' };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update project.';
       console.error('Update project error:', err);
-      return false;
+      return { success: false, error: msg };
     }
   };
 
   // Delete project handler
-  const handleDeleteProject = async (id: string): Promise<boolean> => {
+  const handleDeleteProject = async (id: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      let activeCsrf = csrfToken;
+      if (!activeCsrf) {
+        try {
+          const meRes = await fetch('/api/auth/me', { method: 'GET', credentials: 'include' });
+          if (meRes.ok) {
+            const meData = await meRes.json();
+            if (meData.csrfToken) activeCsrf = meData.csrfToken;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const headers: Record<string, string> = {};
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken;
+      if (activeCsrf) {
+        headers['x-csrf-token'] = activeCsrf;
       }
 
       const res = await fetch(`/api/projects/${id}`, {
@@ -156,16 +203,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenProject }) => {
         credentials: 'include',
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to delete project');
+        return {
+          success: false,
+          error: data.error || 'Failed to delete project.',
+        };
       }
 
       setProjects((prev) => prev.filter((p) => p.id !== id));
-      return true;
-    } catch (err) {
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete project.';
       console.error('Delete project error:', err);
-      return false;
+      return { success: false, error: msg };
     }
   };
 
@@ -277,17 +329,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onOpenProject }) => {
 
       {/* Error Alert State */}
       {error && (
-        <div className="p-4 rounded-xl bg-[#690005]/40 border border-[#FF5357]/40 text-white flex items-center justify-between gap-3">
+        <div className="p-4 rounded-xl bg-[#690005]/40 border border-[#FF5357]/40 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs">
-            <span className="material-symbols-outlined text-[#FF5357]">error</span>
+            <span className="material-symbols-outlined text-[#FF5357] shrink-0">error</span>
             <span>{error}</span>
           </div>
-          <button
-            onClick={fetchProjects}
-            className="px-3 py-1 rounded-lg bg-[#FF5357]/20 hover:bg-[#FF5357]/30 text-xs font-medium border border-[#FF5357]/40 text-white transition-colors"
-          >
-            Retry
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {(error.toLowerCase().includes('authentication') ||
+              error.toLowerCase().includes('sign in')) && (
+              <button
+                onClick={loginWithGoogle}
+                className="px-3.5 py-1.5 rounded-lg bg-[#E5484D] hover:bg-[#D43D42] text-xs font-bold text-white transition-all flex items-center gap-1.5 cursor-pointer shadow"
+              >
+                <span className="material-symbols-outlined text-sm">login</span>
+                <span>Sign In with Google</span>
+              </button>
+            )}
+            <button
+              onClick={fetchProjects}
+              className="px-3.5 py-1.5 rounded-lg bg-[#FF5357]/20 hover:bg-[#FF5357]/30 text-xs font-medium border border-[#FF5357]/40 text-white transition-colors cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       )}
 

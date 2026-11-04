@@ -1,4 +1,20 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
+import CodeMirror from '@uiw/react-codemirror';
+import { html } from '@codemirror/lang-html';
+import { css } from '@codemirror/lang-css';
+import { javascript } from '@codemirror/lang-javascript';
+import { json } from '@codemirror/lang-json';
+import { python } from '@codemirror/lang-python';
+import { java } from '@codemirror/lang-java';
+import { cpp } from '@codemirror/lang-cpp';
+import { php } from '@codemirror/lang-php';
+import { sql } from '@codemirror/lang-sql';
+import { keymap, EditorView } from '@codemirror/view';
+import { indentWithTab } from '@codemirror/commands';
+import { search, searchKeymap } from '@codemirror/search';
+import { autocompletion } from '@codemirror/autocomplete';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags as t } from '@lezer/highlight';
 import { WorkspaceFile } from './FileExplorer';
 
 interface CodeEditorProps {
@@ -11,6 +27,107 @@ interface CodeEditorProps {
   assistantOpen?: boolean;
 }
 
+// Custom Obsidian Crimson Native CodeMirror 6 Theme
+export const obsidianCrimsonEditorTheme = EditorView.theme(
+  {
+    '&': {
+      color: '#E0E0E0',
+      backgroundColor: '#0B0B0B',
+      height: '100%',
+      fontSize: '12px',
+    },
+    '.cm-content': {
+      caretColor: '#E5484D',
+      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    },
+    '&.cm-focused .cm-cursor': {
+      borderLeftColor: '#E5484D',
+    },
+    '&.cm-focused .cm-selectionBackground, ::selection': {
+      backgroundColor: '#E5484D35',
+    },
+    '.cm-gutters': {
+      backgroundColor: '#0E0E10',
+      color: '#505050',
+      borderRight: '1px solid #222222',
+    },
+    '.cm-activeLineGutter': {
+      backgroundColor: '#161618',
+      color: '#E5484D',
+    },
+    '.cm-activeLine': {
+      backgroundColor: '#161618',
+    },
+  },
+  { dark: true }
+);
+
+export const obsidianCrimsonHighlightStyle = HighlightStyle.define([
+  { tag: t.comment, color: '#6E7681', fontStyle: 'italic' },
+  { tag: t.variableName, color: '#E0E0E0' },
+  { tag: [t.string, t.special(t.brace)], color: '#34D399' },
+  { tag: t.number, color: '#FBBF24' },
+  { tag: t.bool, color: '#F87171' },
+  { tag: t.null, color: '#F87171' },
+  { tag: t.keyword, color: '#E5484D', fontWeight: 'bold' },
+  { tag: t.operator, color: '#F87171' },
+  { tag: t.className, color: '#60A5FA' },
+  { tag: t.definition(t.typeName), color: '#60A5FA' },
+  { tag: t.typeName, color: '#60A5FA' },
+  { tag: t.angleBracket, color: '#9CA3AF' },
+  { tag: t.tagName, color: '#E5484D' },
+  { tag: t.attributeName, color: '#FBBF24' },
+]);
+
+export const obsidianCrimsonTheme = [
+  obsidianCrimsonEditorTheme,
+  syntaxHighlighting(obsidianCrimsonHighlightStyle),
+];
+
+export function getLanguageExtension(language: WorkspaceFile['language'], fileName: string) {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  if (language === 'html' || ext === 'html' || ext === 'htm') return html();
+  if (language === 'css' || ext === 'css') return css();
+  if (language === 'javascript' || ext === 'js' || ext === 'jsx')
+    return javascript({ jsx: true, typescript: false });
+  if (language === 'typescript' || ext === 'ts' || ext === 'tsx')
+    return javascript({ jsx: true, typescript: true });
+  if (language === 'json' || ext === 'json') return json();
+  if (language === 'python' || ext === 'py') return python();
+  if (language === 'java' || ext === 'java') return java();
+  if (language === 'cpp' || language === 'c' || ext === 'cpp' || ext === 'c' || ext === 'h')
+    return cpp();
+  if (language === 'php' || ext === 'php') return php();
+  if (language === 'sql' || ext === 'sql') return sql();
+  return html();
+}
+
+export function getLanguageMeta(lang: WorkspaceFile['language'], fileName: string) {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  if (lang === 'html' || ext === 'html' || ext === 'htm')
+    return { name: 'HTML5 Document', isPreviewable: true };
+  if (lang === 'css' || ext === 'css')
+    return { name: 'CSS3 Stylesheet', isPreviewable: true };
+  if (lang === 'javascript' || ext === 'js' || ext === 'jsx')
+    return { name: 'JavaScript (ES6+)', isPreviewable: true };
+  if (lang === 'typescript' || ext === 'ts' || ext === 'tsx')
+    return { name: 'TypeScript / React', isPreviewable: true };
+  if (lang === 'json' || ext === 'json')
+    return { name: 'JSON Config', isPreviewable: true };
+  if (lang === 'python' || ext === 'py')
+    return { name: 'Python 3', isPreviewable: false };
+  if (lang === 'java' || ext === 'java')
+    return { name: 'Java', isPreviewable: false };
+  if (lang === 'cpp' || lang === 'c' || ext === 'cpp' || ext === 'c' || ext === 'h')
+    return { name: 'C / C++', isPreviewable: false };
+  if (lang === 'php' || ext === 'php')
+    return { name: 'PHP Script', isPreviewable: false };
+  if (lang === 'sql' || ext === 'sql')
+    return { name: 'SQL Query', isPreviewable: false };
+
+  return { name: 'Plain Text', isPreviewable: true };
+}
+
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   file,
   isDirty = false,
@@ -20,78 +137,23 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   onToggleAssistant,
   assistantOpen = false,
 }) => {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const lineNumbersRef = useRef<HTMLDivElement>(null);
-
-  // Sync line numbers scroll position with main editor textarea
-  const handleScroll = () => {
-    if (textareaRef.current && lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  };
-
-  // Intercept Tab and Enter keys for smooth indentation experience
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!file) return;
-
-    // Ctrl+S / Cmd+S Hotkey
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-      e.preventDefault();
-      onSave();
-      return;
-    }
-
-    // Tab key inserts 2 spaces
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const val = file.content;
-
-      const newContent = val.substring(0, start) + '  ' + val.substring(end);
-      onChangeContent(file.id, newContent);
-
-      setTimeout(() => {
-        textarea.selectionStart = textarea.selectionEnd = start + 2;
-      }, 0);
-    }
-
-    // Enter key auto-indents matching previous line indentation
-    if (e.key === 'Enter') {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      const start = textarea.selectionStart;
-      const val = file.content;
-      const lineStart = val.lastIndexOf('\n', start - 1) + 1;
-      const currentLine = val.substring(lineStart, start);
-      const match = currentLine.match(/^(\s+)/);
-      const indent = match ? match[1] : '';
-
-      if (indent.length > 0) {
-        e.preventDefault();
-        const newContent = val.substring(0, start) + '\n' + indent + val.substring(start);
-        onChangeContent(file.id, newContent);
-
-        setTimeout(() => {
-          textarea.selectionStart = textarea.selectionEnd = start + 1 + indent.length;
-        }, 0);
+  const handleCodeChange = useCallback(
+    (value: string) => {
+      if (file) {
+        onChangeContent(file.id, value);
       }
-    }
-  };
+    },
+    [file, onChangeContent]
+  );
 
-  // Simple Code Formatter for JSON, HTML, CSS, JS
-  const handleFormatCode = () => {
+  // Format JSON code if file language is json
+  const handleFormatCode = useCallback(() => {
     if (!file) return;
     try {
       if (file.language === 'json') {
         const parsed = JSON.parse(file.content);
         onChangeContent(file.id, JSON.stringify(parsed, null, 2));
       } else {
-        // Basic line-based trimming & bracket indentation formatting for CSS/HTML/JS
         const formatted = file.content
           .split('\n')
           .map((line) => line.trimEnd())
@@ -99,9 +161,30 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         onChangeContent(file.id, formatted);
       }
     } catch {
-      // Ignore format errors if invalid syntax
+      // Ignore parse errors if syntax invalid
     }
-  };
+  }, [file, onChangeContent]);
+
+  // Build CodeMirror extensions list
+  const extensions = useMemo(() => {
+    if (!file) return [];
+
+    const langExt = getLanguageExtension(file.language, file.name);
+
+    const customKeymaps = keymap.of([
+      indentWithTab,
+      ...searchKeymap,
+      {
+        key: 'Mod-s',
+        run: () => {
+          onSave();
+          return true;
+        },
+      },
+    ]);
+
+    return [langExt, customKeymaps, search(), autocompletion()];
+  }, [file, onSave]);
 
   if (!file) {
     return (
@@ -109,28 +192,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         <span className="material-symbols-outlined text-4xl text-[#303030]">data_object</span>
         <h3 className="text-sm font-bold text-white font-display">No File Selected</h3>
         <p className="text-xs text-[#8E8E8E] max-w-xs font-body">
-          Select a file from the Project Files tree to edit content.
+          Select a file from the Project Files tree to view or edit content.
         </p>
       </div>
     );
   }
 
+  const meta = getLanguageMeta(file.language, file.name);
   const lines = file.content.split('\n');
-
-  const getLanguageLabel = (lang: WorkspaceFile['language']) => {
-    switch (lang) {
-      case 'html':
-        return 'HTML5 Document';
-      case 'css':
-        return 'CSS3 Stylesheet';
-      case 'javascript':
-        return 'JavaScript (ES6+)';
-      case 'json':
-        return 'JSON Config';
-      default:
-        return 'Plain Text';
-    }
-  };
 
   return (
     <main className="w-full h-full bg-[#0B0B0B] border-r border-[#303030] flex flex-col overflow-hidden">
@@ -150,7 +219,21 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             )}
           </div>
           <span className="hidden sm:inline text-[11px] font-mono text-[#8E8E8E]">
-            {getLanguageLabel(file.language)}
+            {meta.name}
+          </span>
+          <span
+            className={`hidden lg:inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded border ${
+              meta.isPreviewable
+                ? 'bg-emerald-950/50 text-emerald-300 border-emerald-500/30'
+                : 'bg-amber-950/50 text-amber-300 border-amber-500/30'
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                meta.isPreviewable ? 'bg-emerald-400' : 'bg-amber-400'
+              }`}
+            ></span>
+            <span>{meta.isPreviewable ? 'Live Preview' : 'Reference Only'}</span>
           </span>
         </div>
 
@@ -175,7 +258,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                   ? 'bg-[#E5484D] text-white border-[#E5484D]'
                   : 'bg-[#1B1B1B] hover:bg-[#222222] text-[#B0B0B0] hover:text-white border-[#303030]'
               }`}
-              title="Toggle Beginner Assistant & Snippets"
+              title="Toggle Beginner Assistant & Learning Drawer"
             >
               <span className="material-symbols-outlined text-xs">school</span>
               <span className="hidden md:inline">Helper</span>
@@ -210,32 +293,41 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
       </div>
 
-      {/* Editor Main Content Area */}
-      <div className="flex-1 overflow-hidden bg-[#0B0B0B] flex relative">
-        {/* Line Numbers Column */}
-        <div
-          ref={lineNumbersRef}
-          className="select-none bg-[#0E0E10] text-[#505050] py-3 pl-3 pr-2 text-right border-r border-[#222222] shrink-0 font-mono text-xs leading-6 overflow-hidden space-y-0 text-[11px]"
-        >
-          {lines.map((_, idx) => (
-            <div key={idx} className="h-6">
-              {idx + 1}
-            </div>
-          ))}
-        </div>
-
-        {/* Textarea Editor Input Area */}
-        <textarea
-          ref={textareaRef}
+      {/* CodeMirror Editor Area */}
+      <div className="flex-1 overflow-hidden bg-[#0B0B0B] relative flex flex-col">
+        <CodeMirror
           value={file.content}
-          onChange={(e) => onChangeContent(file.id, e.target.value)}
-          onScroll={handleScroll}
-          onKeyDown={handleKeyDown}
-          spellCheck={false}
-          autoCapitalize="off"
-          autoComplete="off"
-          autoCorrect="off"
-          className="flex-1 h-full w-full bg-transparent text-[#E0E0E0] p-3 font-mono text-xs leading-6 resize-none focus:outline-none whitespace-pre overflow-auto scrollbar-thin scrollbar-thumb-[#303030]"
+          height="100%"
+          className="h-full w-full flex-1 text-xs font-mono overflow-auto"
+          theme={obsidianCrimsonTheme}
+          extensions={extensions}
+          onChange={handleCodeChange}
+          basicSetup={{
+            lineNumbers: true,
+            highlightActiveLineGutter: true,
+            highlightSpecialChars: true,
+            history: true,
+            foldGutter: true,
+            drawSelection: true,
+            dropCursor: true,
+            allowMultipleSelections: true,
+            indentOnInput: true,
+            syntaxHighlighting: true,
+            bracketMatching: true,
+            closeBrackets: true,
+            autocompletion: true,
+            rectangularSelection: true,
+            crosshairCursor: true,
+            highlightActiveLine: true,
+            highlightSelectionMatches: true,
+            closeBracketsKeymap: true,
+            defaultKeymap: true,
+            searchKeymap: true,
+            historyKeymap: true,
+            foldKeymap: true,
+            completionKeymap: true,
+            lintKeymap: true,
+          }}
         />
       </div>
 

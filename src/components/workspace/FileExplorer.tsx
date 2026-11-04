@@ -3,7 +3,18 @@ import React, { useState } from 'react';
 export interface WorkspaceFile {
   id: string;
   name: string;
-  language: 'html' | 'css' | 'javascript' | 'json';
+  language:
+    | 'html'
+    | 'css'
+    | 'javascript'
+    | 'typescript'
+    | 'json'
+    | 'python'
+    | 'java'
+    | 'cpp'
+    | 'c'
+    | 'php'
+    | 'sql';
   content: string;
   updatedAt?: string;
 }
@@ -40,8 +51,21 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         return { icon: 'style', color: 'text-cyan-400' };
       case 'javascript':
         return { icon: 'javascript', color: 'text-yellow-400' };
+      case 'typescript':
+        return { icon: 'code_blocks', color: 'text-blue-400' };
       case 'json':
         return { icon: 'data_object', color: 'text-emerald-400' };
+      case 'python':
+        return { icon: 'terminal', color: 'text-sky-400' };
+      case 'java':
+        return { icon: 'coffee', color: 'text-orange-400' };
+      case 'cpp':
+      case 'c':
+        return { icon: 'memory', color: 'text-purple-400' };
+      case 'php':
+        return { icon: 'php', color: 'text-indigo-400' };
+      case 'sql':
+        return { icon: 'database', color: 'text-rose-400' };
       default:
         return { icon: 'description', color: 'text-[#B0B0B0]' };
     }
@@ -217,7 +241,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                   <option value="html">HTML5 (.html)</option>
                   <option value="css">CSS3 (.css)</option>
                   <option value="javascript">JavaScript (.js)</option>
+                  <option value="typescript">TypeScript (.ts / .tsx)</option>
                   <option value="json">JSON (.json)</option>
+                  <option value="python">Python (.py)</option>
+                  <option value="java">Java (.java)</option>
+                  <option value="cpp">C / C++ (.cpp / .c)</option>
+                  <option value="php">PHP (.php)</option>
+                  <option value="sql">SQL (.sql)</option>
                 </select>
               </div>
 

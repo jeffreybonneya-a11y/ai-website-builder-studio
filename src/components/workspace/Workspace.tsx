@@ -166,6 +166,14 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project: initialProject, o
     );
   };
 
+  // Apply diagnostic code fix into active file
+  const handleApplyFix = (fixedContent: string) => {
+    if (!selectedFileId) return;
+    setFiles((prev) =>
+      prev.map((f) => (f.id === selectedFileId ? { ...f, content: fixedContent } : f))
+    );
+  };
+
   // Save Workspace files to backend PUT /api/projects/:id/files
   const handleSave = async (overrideExpectedRevision?: number) => {
     if (saving) return;
@@ -412,18 +420,19 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project: initialProject, o
 
           {/* Beginner Assistant Panel (Optional 280px drawer) */}
           {assistantOpen && (
-            <div className="w-72 shrink-0 h-full">
+            <div className="w-80 shrink-0 h-full">
               <BeginnerAssistant
                 activeFile={selectedFile}
                 files={files}
                 onInsertSnippet={handleInsertSnippet}
+                onApplyFix={handleApplyFix}
                 onClose={() => setAssistantOpen(false)}
               />
             </div>
           )}
 
           {/* Live Preview */}
-          <div className={`${assistantOpen ? 'w-[38%]' : 'w-[45%]'} shrink-0 h-full transition-all`}>
+          <div className={`${assistantOpen ? 'w-[36%]' : 'w-[45%]'} shrink-0 h-full transition-all`}>
             <LivePreview files={files} projectTitle={project.title} />
           </div>
         </div>
@@ -474,6 +483,10 @@ export const Workspace: React.FC<WorkspaceProps> = ({ project: initialProject, o
                 files={files}
                 onInsertSnippet={(snippet) => {
                   handleInsertSnippet(snippet);
+                  setMobileTab('code');
+                }}
+                onApplyFix={(fixedContent) => {
+                  handleApplyFix(fixedContent);
                   setMobileTab('code');
                 }}
               />

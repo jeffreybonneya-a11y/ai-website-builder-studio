@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 export interface ProjectModalData {
   id: string;
@@ -9,10 +10,15 @@ export interface ProjectModalData {
 
 interface CreateModalProps {
   onClose: () => void;
-  onCreate: (title: string, description: string, status: 'draft' | 'published' | 'archived') => Promise<boolean>;
+  onCreate: (
+    title: string,
+    description: string,
+    status: 'draft' | 'published' | 'archived'
+  ) => Promise<boolean | { success: boolean; error?: string }>;
 }
 
 export const CreateProjectModal: React.FC<CreateModalProps> = ({ onClose, onCreate }) => {
+  const { loginWithGoogle } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
@@ -29,13 +35,19 @@ export const CreateProjectModal: React.FC<CreateModalProps> = ({ onClose, onCrea
     setSubmitting(true);
     setError(null);
 
-    const success = await onCreate(title.trim(), description.trim(), status);
+    const result = await onCreate(title.trim(), description.trim(), status);
     setSubmitting(false);
 
-    if (success) {
+    const isSuccess = typeof result === 'boolean' ? result : result.success;
+    const errorMsg =
+      typeof result === 'object' && result.error
+        ? result.error
+        : 'Failed to create project. Please try again.';
+
+    if (isSuccess) {
       onClose();
     } else {
-      setError('Failed to create project. Please try again.');
+      setError(errorMsg);
     }
   };
 
@@ -65,9 +77,30 @@ export const CreateProjectModal: React.FC<CreateModalProps> = ({ onClose, onCrea
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 rounded-xl bg-[#690005]/40 border border-[#FF5357]/40 text-xs text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#FF5357] text-sm">error</span>
-              <span>{error}</span>
+            <div className="p-3.5 rounded-xl bg-[#690005]/40 border border-[#FF5357]/40 text-xs text-white space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#FF5357] text-sm shrink-0">
+                  error
+                </span>
+                <span>{error}</span>
+              </div>
+              {(error.toLowerCase().includes('authentication') ||
+                error.toLowerCase().includes('sign in') ||
+                error.toLowerCase().includes('csrf')) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const loggedIn = await loginWithGoogle();
+                    if (loggedIn) {
+                      setError(null);
+                    }
+                  }}
+                  className="w-full py-2 px-3 rounded-lg bg-[#E5484D] hover:bg-[#D43D42] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow"
+                >
+                  <span className="material-symbols-outlined text-sm">login</span>
+                  <span>Sign In with Google to Continue</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -152,10 +185,11 @@ interface EditModalProps {
     title: string,
     description: string,
     status: 'draft' | 'published' | 'archived'
-  ) => Promise<boolean>;
+  ) => Promise<boolean | { success: boolean; error?: string }>;
 }
 
 export const EditProjectModal: React.FC<EditModalProps> = ({ project, onClose, onUpdate }) => {
+  const { loginWithGoogle } = useAuth();
   const [title, setTitle] = useState(project.title);
   const [description, setDescription] = useState(project.description || '');
   const [status, setStatus] = useState<'draft' | 'published' | 'archived'>(project.status);
@@ -172,13 +206,19 @@ export const EditProjectModal: React.FC<EditModalProps> = ({ project, onClose, o
     setSubmitting(true);
     setError(null);
 
-    const success = await onUpdate(project.id, title.trim(), description.trim(), status);
+    const result = await onUpdate(project.id, title.trim(), description.trim(), status);
     setSubmitting(false);
 
-    if (success) {
+    const isSuccess = typeof result === 'boolean' ? result : result.success;
+    const errorMsg =
+      typeof result === 'object' && result.error
+        ? result.error
+        : 'Failed to update project. Please try again.';
+
+    if (isSuccess) {
       onClose();
     } else {
-      setError('Failed to update project. Please try again.');
+      setError(errorMsg);
     }
   };
 
@@ -208,9 +248,30 @@ export const EditProjectModal: React.FC<EditModalProps> = ({ project, onClose, o
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 rounded-xl bg-[#690005]/40 border border-[#FF5357]/40 text-xs text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#FF5357] text-sm">error</span>
-              <span>{error}</span>
+            <div className="p-3.5 rounded-xl bg-[#690005]/40 border border-[#FF5357]/40 text-xs text-white space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#FF5357] text-sm shrink-0">
+                  error
+                </span>
+                <span>{error}</span>
+              </div>
+              {(error.toLowerCase().includes('authentication') ||
+                error.toLowerCase().includes('sign in') ||
+                error.toLowerCase().includes('csrf')) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const loggedIn = await loginWithGoogle();
+                    if (loggedIn) {
+                      setError(null);
+                    }
+                  }}
+                  className="w-full py-2 px-3 rounded-lg bg-[#E5484D] hover:bg-[#D43D42] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow"
+                >
+                  <span className="material-symbols-outlined text-sm">login</span>
+                  <span>Sign In with Google to Continue</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -288,10 +349,11 @@ export const EditProjectModal: React.FC<EditModalProps> = ({ project, onClose, o
 interface DeleteModalProps {
   project: ProjectModalData;
   onClose: () => void;
-  onConfirm: (id: string) => Promise<boolean>;
+  onConfirm: (id: string) => Promise<boolean | { success: boolean; error?: string }>;
 }
 
 export const DeleteProjectModal: React.FC<DeleteModalProps> = ({ project, onClose, onConfirm }) => {
+  const { loginWithGoogle } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -299,13 +361,19 @@ export const DeleteProjectModal: React.FC<DeleteModalProps> = ({ project, onClos
     setSubmitting(true);
     setError(null);
 
-    const success = await onConfirm(project.id);
+    const result = await onConfirm(project.id);
     setSubmitting(false);
 
-    if (success) {
+    const isSuccess = typeof result === 'boolean' ? result : result.success;
+    const errorMsg =
+      typeof result === 'object' && result.error
+        ? result.error
+        : 'Failed to delete project. Please try again.';
+
+    if (isSuccess) {
       onClose();
     } else {
-      setError('Failed to delete project. Please try again.');
+      setError(errorMsg);
     }
   };
 
@@ -335,9 +403,30 @@ export const DeleteProjectModal: React.FC<DeleteModalProps> = ({ project, onClos
 
         <div className="p-6 space-y-4">
           {error && (
-            <div className="p-3 rounded-xl bg-[#690005]/40 border border-[#FF5357]/40 text-xs text-white flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#FF5357] text-sm">error</span>
-              <span>{error}</span>
+            <div className="p-3.5 rounded-xl bg-[#690005]/40 border border-[#FF5357]/40 text-xs text-white space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#FF5357] text-sm shrink-0">
+                  error
+                </span>
+                <span>{error}</span>
+              </div>
+              {(error.toLowerCase().includes('authentication') ||
+                error.toLowerCase().includes('sign in') ||
+                error.toLowerCase().includes('csrf')) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const loggedIn = await loginWithGoogle();
+                    if (loggedIn) {
+                      setError(null);
+                    }
+                  }}
+                  className="w-full py-2 px-3 rounded-lg bg-[#E5484D] hover:bg-[#D43D42] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow"
+                >
+                  <span className="material-symbols-outlined text-sm">login</span>
+                  <span>Sign In with Google to Continue</span>
+                </button>
+              )}
             </div>
           )}
 
