@@ -1,6 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { getLanguageMeta } from '../src/components/workspace/CodeEditor.tsx';
+import {
+  getLanguageMeta,
+  isValidCssColor,
+  parseColorToHex,
+  hexToRgbString,
+  hexToHslString,
+} from '../src/components/workspace/CodeEditor.tsx';
 
 describe('AI Website Builder Studio — Stage 4.2B.1 Workspace & Editor Unit Test Suite', () => {
   describe('1. Multiline Editing & Line Counting Logic', () => {
@@ -197,6 +203,46 @@ describe('AI Website Builder Studio — Stage 4.2B.1 Workspace & Editor Unit Tes
 
       assert.equal(modifiedSet.has('f1'), true);
       assert.equal(modifiedSet.size, 1);
+    });
+  });
+
+  describe('11. Stage 4.2B.2 Inline Color Picker Unit Test Suite', () => {
+    it('validates HEX, RGB, RGBA, HSL, HSLA and CSS named colors correctly', () => {
+      assert.equal(isValidCssColor('#ffffff'), true);
+      assert.equal(isValidCssColor('#172554'), true);
+      assert.equal(isValidCssColor('#fff'), true);
+      assert.equal(isValidCssColor('rgb(255, 0, 0)'), true);
+      assert.equal(isValidCssColor('rgba(255, 0, 0, 0.5)'), true);
+      assert.equal(isValidCssColor('hsl(0, 100%, 50%)'), true);
+      assert.equal(isValidCssColor('crimson'), true);
+      assert.equal(isValidCssColor('transparent'), true);
+
+      // Rejects invalid strings
+      assert.equal(isValidCssColor('not_a_color_123!'), false);
+      assert.equal(isValidCssColor('#gggggg'), false);
+    });
+
+    it('parses 3-digit and 6-digit hex values to 6-digit hex format', () => {
+      assert.equal(parseColorToHex('#fff'), '#ffffff');
+      assert.equal(parseColorToHex('#172554'), '#172554');
+      assert.equal(parseColorToHex('#0b0b0b'), '#0b0b0b');
+    });
+
+    it('converts hex strings to RGB and HSL representations', () => {
+      assert.equal(hexToRgbString('#ff0000'), 'rgb(255, 0, 0)');
+      assert.equal(hexToHslString('#ff0000'), 'hsl(0, 100%, 50%)');
+    });
+
+    it('substitutes color strings in source code without corrupting surrounding CSS', () => {
+      const cssContent = 'body { background-color: #000000; color: #ffffff; }';
+      const targetFrom = cssContent.indexOf('#000000');
+      const targetTo = targetFrom + '#000000'.length;
+
+      const newColor = '#E5484D';
+      const updatedCss =
+        cssContent.substring(0, targetFrom) + newColor + cssContent.substring(targetTo);
+
+      assert.equal(updatedCss, 'body { background-color: #E5484D; color: #ffffff; }');
     });
   });
 });
